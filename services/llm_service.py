@@ -10,6 +10,7 @@ from tools.time_tool import get_current_date, get_current_time
 from tools.serper_web_search import SerperSearchTool
 from tools.comfy_tool import ComfyUIImageTool
 from tools.music_generation_tool import MusicGenerationTool
+from tools.python_executor_tool import PythonExecutorTool
 from config import Config
 
 class LLMService:
@@ -35,6 +36,7 @@ class LLMService:
         self.serper_web_search_tool = SerperSearchTool(config.SERPER_API_KEY)
         self.comfy_image_tool = ComfyUIImageTool(config)
         self.music_generation_tool = MusicGenerationTool(config)
+        self.python_tool = PythonExecutorTool(config)
         
         # Base tools list
         self.tools = [
@@ -43,6 +45,7 @@ class LLMService:
             self.serper_web_search_tool.get_web_tool(),
             self.comfy_image_tool.get_tool(),
             self.music_generation_tool.get_tool(),
+            self.python_tool.get_tool(),
         ]
 
     def generate_reply(self, conversation_id: str, prompt: str, images=None) -> str:
