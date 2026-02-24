@@ -18,7 +18,7 @@ class GroupChatHandler:
         user_id = event.get("user")
         raw_text = event.get("text", "")
         
-        # Strip bot mention
+        # Strip bot mention from user input
         user_input = re.sub(r'<@.*?>', '', raw_text).strip()
 
         # Initial Placeholder
@@ -30,14 +30,10 @@ class GroupChatHandler:
         msg_ts = initial_msg["ts"]
 
         # File Processing
-        file_content = ""
+        file_texts = []
+        file_images = []
         if "files" in event:
-            client.chat_postEphemeral(
-                channel=conv_id, 
-                user=user_id, 
-                thread_ts=thread_ts,
-                text="_Reading your uploaded files..._"
-            )
+            
             file_texts, file_images = self._process_files(event["files"], client)
             
             if file_texts:
@@ -51,7 +47,9 @@ class GroupChatHandler:
 
         # Invoke Agent (Non-Streaming)
         client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
+        # Flags
         self.llm_service.comfy_image_tool.is_generating = False
+        self.llm_service.music_generation_tool.is_generating = False
 
         try:
             final_text = self.llm_service.generate_reply(conv_id, user_input, images = file_images)
@@ -87,6 +85,13 @@ class GroupChatHandler:
                 args=(conv_id, client, thread_ts),
                 daemon=True
             ).start()
+
+        if self.llm_service.music_generation_tool.is_generating:
+            threading.Thread(
+                target=self._music_watcher_thread, 
+                args=(conv_id, client, thread_ts),
+                daemon=True
+        ).start()
 
     def _process_files(self, files, client):
         extracted_text = []
@@ -190,3 +195,42 @@ class GroupChatHandler:
                     except Exception as e:
                         print(f"Group upload failed: {e}")
                     return
+                
+    def _music_watcher_thread(self, channel, client, thread_ts):
+        """Watches for a new .wav file and uploads it to the Slack thread."""
+        # Ensure your Config class has MUSIC_GENERATION_PATH (the folder where Flask saves)
+        path = self.llm_service.config.MUSIC_GENERATION_PATH 
+        
+        if not os.path.exists(path):
+            print(f"ERROR: Music path does not exist: {path}")
+            return
+
+        initial_files = set(os.listdir(path))
+        
+        # Search for up to 5 minutes (100 loops * 3 seconds)
+        for _ in range(100):
+            time.sleep(3)
+            current_files = set(os.listdir(path))
+            new_files = current_files - initial_files
+            
+            if new_files:
+                # Filter for .wav files
+                wav_files = [os.path.join(path, f) for f in new_files if f.lower().endswith('.wav')]
+                if wav_files:
+                    # Small buffer to ensure the file is completely written to disk
+                    time.sleep(1) 
+                    latest_audio = max(wav_files, key=os.path.getctime)
+                    
+                    try:
+                        client.files_upload_v2(
+                            channel=channel,
+                            thread_ts=thread_ts,
+                            file=latest_audio,
+                            title="AI Generated Music",
+                            initial_comment="*Your music is ready!*"
+                        )
+                    except Exception as e:
+                        print(f"Music upload failed: {e}")
+                    return # Exit thread after successful upload
+                    
+        print(f"Music generation timed out for channel {channel}")

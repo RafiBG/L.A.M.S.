@@ -14,17 +14,11 @@ class SlashClearMemoryHandler:
     # Internal Methods
     def _clear_user_memory(self, body, client):
         channel_id = body["channel_id"]
-        user_id = body["user_id"]
 
         if channel_id in self.llm_service.history_db:
-            # Keep system messages and remove user messages in this channel
-            self.llm_service.history_db[channel_id] = [
-                msg for msg in self.llm_service.history_db[channel_id]
-                if msg.__class__.__name__ == "SystemMessage"
-                or (msg.__class__.__name__ != "HumanMessage" or getattr(msg, "user_id", None) != user_id)
-            ]
+            del self.llm_service.history_db[channel_id]
 
         client.chat_postMessage(
             channel=channel_id,
-            text=f"<@{user_id}>, your AI memory for this chat has been cleared! ✅"
-        )
+            text="AI memory for this conversation has been cleared."
+    )

@@ -1,9 +1,12 @@
+import time
+import ssl
 from slack_bolt import App
+from slack_sdk import WebClient
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from services.llm_service import LLMService
-import time
 from handlers.group_chat import GroupChatHandler
 from handlers.private_chat import PrivateChatHandler
+from handlers.slash_clear_memory import SlashClearMemoryHandler
 
 class SlackBotService:
     def __init__(
@@ -21,6 +24,9 @@ class SlackBotService:
         # Handlers
         self.group_handler = GroupChatHandler(llm_service)
         self.private_handler = PrivateChatHandler(llm_service)
+
+        # Slash Handlers
+        self.slash_clear_handler = SlashClearMemoryHandler(llm_service)
         
         self.handler: SocketModeHandler | None = None
         self._register_handlers()
@@ -39,11 +45,15 @@ class SlackBotService:
             if event.get("channel_type") == "im":
                 self.private_handler.handle(event, say, client)
 
+        # Register slash commands
+        self.slash_clear_handler.register_commands(self.app)
 
     def run_sync(self) -> None:
         """Starts the bot synchronously. This blocks the thread it is called in."""
+        # SocketModeHandler also needs to be told not to hang on SSL
         self.handler = SocketModeHandler(self.app, self.app_token)
-        # .connect() starts the websocket WITHOUT trying to register OS signals
+        
+        # .connect() starts the websocket
         self.handler.connect()
         
         while self.handler is not None:
@@ -52,5 +62,8 @@ class SlackBotService:
     def stop(self) -> None:
         """Gracefully shuts down the connection."""
         if self.handler:
-            self.handler.close()
+            try:
+                self.handler.close()
+            except Exception:
+                pass
             self.handler = None

@@ -1,35 +1,53 @@
 import uvicorn
 import webbrowser
+import time
 import sys
 from threading import Timer
 from web.app import app  
 from config import Config
 from services.llm_service import LLMService
-from services.slack_bot_service import SlackBotService
 from services.bot_manager import BotManager
 
 def open_browser():
-    webbrowser.open("http://127.0.0.1:5000")
+    try:
+        print("Opening dashboard...")
+        webbrowser.open("http://127.0.0.1:5000")
+    except Exception as e:
+        print(f"Browser error: {e}")
 
 def main():
+    try:
         config = Config()
         llm_service = LLMService(config)
         
-        slack_bot = SlackBotService(
-            llm_service=llm_service,
-            bot_token=config.BOT_TOKEN,
-            app_token=config.APP_TOKEN,
-            allowed_channel_ids=config.ALLOWED_GROUP_CHANNEL_IDS
-        )
-        
-        bot_manager = BotManager(slack_bot)
+        # Initialize the manager
+        bot_manager = BotManager(config, llm_service)
 
+        # Attach to app state so the web routes can see it
         app.state.bot_manager = bot_manager
         app.state.llm_service = llm_service
 
-        Timer(1.0, open_browser).start()
+        browser_timer = Timer(2.5, open_browser)
+        browser_timer.daemon = True
+        browser_timer.start()
 
-        uvicorn.run(app, host="127.0.0.1", port=5000, log_level="info")
+        print("--- Starting Server ---")
+        
+        server_config = uvicorn.Config(
+            app, 
+            host="127.0.0.1", 
+            port=5000, 
+            log_level="info",
+        )
+        server = uvicorn.Server(server_config)
+        
+        server.run()
+
+    except KeyboardInterrupt:
+        print("\nStopping server...")
+    except Exception as e:
+        print(f"Critical Startup Error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

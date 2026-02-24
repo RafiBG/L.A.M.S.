@@ -59,6 +59,3 @@ class EnvService:
 
         with open(self.path, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
-
-        with open(self.path, "w", encoding="utf-8") as f:
-            f.writelines(new_lines)

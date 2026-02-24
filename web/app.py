@@ -68,6 +68,7 @@ async def config_page(request: Request):
             "comfy_image_height": env_data.get("COMFYUI_IMAGE_HEIGHT"),
             "comfy_steps": env_data.get("COMFYUI_STEPS"),
             "vision_model": env_data.get("VISION_MODEL"),
+            "music_generation": env_data.get("MUSIC_GENERATION_PATH"),
         },
     )
 
@@ -89,6 +90,7 @@ async def save_config(
     comfy_image_height: str = Form(...),
     comfy_steps: str = Form(...),
     vision_model: str = Form(...),
+    music_generation: str = Form(...),
     
     
 ):
@@ -108,6 +110,7 @@ async def save_config(
         "COMFYUI_IMAGE_HEIGHT": comfy_image_height,
         "COMFYUI_STEPS": comfy_steps,
         "VISION_MODEL": vision_model,
+        "MUSIC_GENERATION_PATH": music_generation,
     }
 
     env_service.write_selected(updates)

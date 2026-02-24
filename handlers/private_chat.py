@@ -15,8 +15,15 @@ class PrivateChatHandler:
 
         conv_id = event.get("channel")
         thread_ts = event.get("thread_ts") or event.get("ts")
+        user_id = event.get("user")
         raw_text = event.get("text", "")
         user_input = raw_text.strip()
+
+        if user_input.lower().startswith("!forget"):
+            return self._handle_forget_command(conv_id, thread_ts, client)
+        
+        if user_input.lower().startswith("!help"):
+            return self._handle_help_command(conv_id, thread_ts, client)
 
         # Post placeholder
         initial_msg = client.chat_postMessage(
@@ -48,7 +55,9 @@ class PrivateChatHandler:
 
         # Get LLM Response
         client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
+
         self.llm_service.comfy_image_tool.is_generating = False
+        self.llm_service.music_generation_tool.is_generating = False
 
         try:
             # Pass images to LLM so it can analyze them
@@ -57,18 +66,39 @@ class PrivateChatHandler:
             print(f"LLM Error: {e}")
             final_text = "Sorry, I had trouble processing that request."
 
-        # Final Update
+        # Search sources (Attachments)
+        attachments = []
+        serper_links = getattr(self.llm_service.serper_web_search_tool, 'latest_links', [])
+        if serper_links:
+            attachments.append({
+                "color": "#36a64f",
+                "title": "🔗 Research Sources",
+                "text": "\n".join([f"• {link}" for link in serper_links])
+            })
+            # Clear links after use so they don't appear in the next message
+            self.llm_service.serper_web_search_tool.latest_links = []
+
+        # Final update with attachments
         client.chat_update(
             channel=conv_id, 
             ts=msg_ts, 
-            text=final_text if final_text.strip() else "Done."
+            text=final_text if final_text.strip() else "Done.",
+            attachments=attachments
         )
 
-        # Image Watcher
+        # Image watcher
         if self.llm_service.comfy_image_tool.is_generating:
             threading.Thread(
                 target=self._image_watcher_thread, 
                 args=(conv_id, client, thread_ts),
+                daemon=True
+            ).start()
+
+        # Music watcher
+        if self.llm_service.music_generation_tool.is_generating:
+            threading.Thread(
+                target=self._music_watcher_thread, 
+                args=(conv_id, client, thread_ts), 
                 daemon=True
             ).start()
 
@@ -169,3 +199,65 @@ class PrivateChatHandler:
 
         # Return must be OUTSIDE the loop
         return extracted_text, extracted_images
+    
+    def _handle_forget_command(self, conv_id, thread_ts, client):
+            """Clears the LLM memory for the specific conversation."""
+            self.llm_service.clear_memory(conv_id)
+            client.chat_postMessage(
+                channel=conv_id,
+                text="*Memory Cleared:* I've forgotten our previous context in this channel.",
+                thread_ts=thread_ts
+        )
+
+    def _handle_help_command(self, conv_id, thread_ts, client):
+        """Sends a help menu to the user."""
+        help_text = (
+            "*Assistant Commands:*\n"
+            "• `!forget` - Wipes my current memory of this chat.\n"
+            "• `!help` - Shows this menu.\n\n"
+            "_You can also upload PDFs, Images, or Word docs for me to analyze!_"
+        )
+        client.chat_postMessage(
+            channel=conv_id,
+            text=help_text,
+            thread_ts=thread_ts
+        )
+
+    def _music_watcher_thread(self, channel, client, thread_ts):
+        """Watches for a new .wav file and uploads it to the Slack thread."""
+        # Ensure your Config class has MUSIC_GENERATION_PATH (the folder where Flask saves)
+        path = self.llm_service.config.MUSIC_GENERATION_PATH 
+        
+        if not os.path.exists(path):
+            print(f"ERROR: Music path does not exist: {path}")
+            return
+
+        initial_files = set(os.listdir(path))
+        
+        # Search for up to 5 minutes (100 loops * 3 seconds)
+        for _ in range(100):
+            time.sleep(3)
+            current_files = set(os.listdir(path))
+            new_files = current_files - initial_files
+            
+            if new_files:
+                # Filter for .wav files
+                wav_files = [os.path.join(path, f) for f in new_files if f.lower().endswith('.wav')]
+                if wav_files:
+                    # Small buffer to ensure the file is completely written to disk
+                    time.sleep(1) 
+                    latest_audio = max(wav_files, key=os.path.getctime)
+                    
+                    try:
+                        client.files_upload_v2(
+                            channel=channel,
+                            thread_ts=thread_ts,
+                            file=latest_audio,
+                            title="AI Generated Music",
+                            initial_comment="*Your music is ready!*"
+                        )
+                    except Exception as e:
+                        print(f"Music upload failed: {e}")
+                    return # Exit thread after successful upload
+                    
+        print(f"Music generation timed out for channel {channel}")
