@@ -27,14 +27,12 @@ def main():
         app.state.bot_manager = bot_manager
         app.state.llm_service = llm_service
 
-        # Launch browser after a short delay
         browser_timer = Timer(2.5, open_browser)
         browser_timer.daemon = True
         browser_timer.start()
 
         print("--- Starting Server ---")
         
-        # We use uvicorn.Config and Server manually to ensure it blocks properly
         server_config = uvicorn.Config(
             app, 
             host="127.0.0.1", 
@@ -43,7 +41,6 @@ def main():
         )
         server = uvicorn.Server(server_config)
         
-        # This call is blocking - it should keep the script alive
         server.run()
 
     except KeyboardInterrupt:

@@ -66,11 +66,24 @@ class PrivateChatHandler:
             print(f"LLM Error: {e}")
             final_text = "Sorry, I had trouble processing that request."
 
-        # Final update
+        # Search sources (Attachments)
+        attachments = []
+        serper_links = getattr(self.llm_service.serper_web_search_tool, 'latest_links', [])
+        if serper_links:
+            attachments.append({
+                "color": "#36a64f",
+                "title": "🔗 Research Sources",
+                "text": "\n".join([f"• {link}" for link in serper_links])
+            })
+            # Clear links after use so they don't appear in the next message
+            self.llm_service.serper_web_search_tool.latest_links = []
+
+        # Final update with attachments
         client.chat_update(
             channel=conv_id, 
             ts=msg_ts, 
-            text=final_text if final_text.strip() else "Done."
+            text=final_text if final_text.strip() else "Done.",
+            attachments=attachments
         )
 
         # Image watcher
