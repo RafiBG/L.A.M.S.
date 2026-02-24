@@ -17,7 +17,6 @@ inside your Slack workspace.
 * 🕒 **Local Time and Date** Retrieve current system time and date.
 * 🌐 **Web Search:** The bot can search the internet for the latest news and real-time information (requires Serper web api key).
 * 🎨 **Image Generation:** The bot can generate images locally using **ComfyUI** (requires installed ComfyUI).
-* 🗣️ **Speaking:** The bot can speak in voice channels (requires installed second Discord bot).
 * 🎵 **Music Generation:** Create original audio and music (requires separate Music Gen Python program running).
 * 🐍 **Python Execution:** Write and execute Python code snippets (requires separate Python Execution environment/program running).
 
