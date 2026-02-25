@@ -178,7 +178,7 @@ If running on another machine in your local network:
 http://192.168.X.X:11434
 ```
 Replace 192.168.X.X with the IP of the PC running Ollama.
----
+
 Download a Model
 
 Example recommended lightweight model:
