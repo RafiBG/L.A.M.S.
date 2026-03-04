@@ -39,15 +39,38 @@
         <label><input type="checkbox" onclick="toggleVisibility('api_key')"> Show api key</label>
         <br>
 
-        <label>Local Host</label><br>
-        <input type="text" name="local_host" value="{{ local_host }}" style="width:100%; padding:8px;"><br>
+        <div class="form-group">
+        <label for="provider">LLM Provider</label>
+            <select id="provider" name="provider">
+                <option value="ollama" {% if provider == "ollama" %}selected{% endif %}>Ollama</option>
+                <option value="lmstudio" {% if provider == "lmstudio" %}selected{% endif %}>LM Studio</option>
+                <option value="openai" {% if provider == "openai" %}selected{% endif %}>OpenAI Cloud</option>
+            </select>
+        </div>
+
+    <div class="form-group">
+    <label for="show_thinking">Show Thinking Process</label>
+        <select id="show_thinking" name="show_thinking">
+            <option value="true" {% if show_thinking == "true" %}selected{% endif %}>Show (Keep &lt;think&gt; tags)</option>
+            <option value="false" {% if show_thinking == "false" %}selected{% endif %}>Hide (Strip &lt;think&gt; tags)</option>
+        </select>
+    </div>
+
+        <label>Ollama Host</label><br>
+        <input type="text" name="ollama_host" value="{{ ollama_host }}" style="width:100%; padding:8px;"><br>
+
+        <label>LM Studio Host</label><br>
+        <input type="text" name="lm_studio_host" value="{{ lm_studio_host }}" style="width:100%; padding:8px;"><br>
+
+        <label>Cloud Host</label><br>
+        <input type="text" name="open_ai_host" value="{{ open_ai_host }}" style="width:100%; padding:8px;"><br>
 
         <label>Allowed Group Channels Ids</label><br>
         <input type="text" name="allowed_channels" value="{{ allowed_channels }}" style="width:100%; padding:8px;"><br>
 
         <label>Model</label><br>
         <input type="text" name="model" value="{{ model }}" style="width:100%; padding:8px;"><br>
-
+        
         <label>System Message</label><br>
         <textarea name="system_message" rows="8" style="width:100%; padding:10px;">{{ system_message }}</textarea>
 
@@ -90,6 +113,9 @@
         <label>Music Output Path (Local Folder)</label><br>
         <input type="text" name="music_generation" value="{{ music_generation }}" style="width:100%; padding:8px;"><br>
         <br>
+
+        <label>Embedding Model</label><br>
+        <input type="text" name="embedding_model" value="{{ embedding_model }}" style="width:100%; padding:8px;"><br>
 
         <button type="submit">Save Configuration</button>
         <p class="red-p">After you press the save button restart the whole program for the changes to apply.</p>

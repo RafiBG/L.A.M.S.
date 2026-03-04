@@ -5,7 +5,7 @@ You must have Python version 3.11.9 (This version is tested)
 1. python -3.11 -m venv venv or py -3.11 -m venv venv
 2. Set-ExecutionPolicy Unrestricted -Scope Process 
 3. \venv\Scripts\activate or .\\venv\Scripts\activate
-4. pip install -r requirements.txt
+4. pip install --use-deprecated=legacy-resolver -r requirements.txt or try this pip install -r requirements.txt
 
 
 If there are some errors left try to install this 
@@ -21,3 +21,4 @@ pip install langchain
 pip install langchain-openai langchain-core langchain-community
 pip install docx2txt
 pip install pypdf
+pip install langchain-chroma==0.1.4 chromadb==0.5.23

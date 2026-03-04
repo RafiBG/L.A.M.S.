@@ -56,7 +56,9 @@ async def config_page(request: Request):
             "bot_token": env_data.get("BOT_TOKEN", ""),
             "app_token": env_data.get("APP_TOKEN", ""),
             "api_key": env_data.get("API_KEY", ""),
-            "local_host": env_data.get("LOCAL_HOST", ""),
+            "ollama_host": env_data.get("OLLAMA_HOST", ""),
+            "lm_studio_host": env_data.get("LM_STUDIO_HOST",""),
+            "open_ai_host": env_data.get("OPEN_AI_HOST",""),
             "allowed_channels": env_data.get("ALLOWED_GROUP_CHANNEL_IDS", ""),
             "model": env_data.get("MODEL", ""),
             "system_message": env_data.get("SYSTEM_MESSAGE", "").replace("\\n", "\n"),
@@ -69,6 +71,9 @@ async def config_page(request: Request):
             "comfy_steps": env_data.get("COMFYUI_STEPS"),
             "vision_model": env_data.get("VISION_MODEL"),
             "music_generation": env_data.get("MUSIC_GENERATION_PATH"),
+            "embedding_model" : env_data.get("EMBEDDIN_MODEL"),
+            "provider": env_data.get("PROVIDER"),
+            "show_thinking": env_data.get("SHOW_THINKING"),
         },
     )
 
@@ -78,7 +83,9 @@ async def save_config(
     bot_token: str = Form(...),
     app_token: str = Form(...),
     api_key: str = Form(...),
-    local_host: str = Form(...),
+    ollama_host: str = Form(...),
+    lm_studio_host: str = Form(...),
+    open_ai_host: str = Form(...),
     allowed_channels: str = Form(""),
     model: str = Form(...),
     system_message: str = Form(...),
@@ -91,6 +98,9 @@ async def save_config(
     comfy_steps: str = Form(...),
     vision_model: str = Form(...),
     music_generation: str = Form(...),
+    embedding_model: str = Form(...),
+    provider: str = Form(...),
+    show_thinking: str = Form(...),
     
     
 ):
@@ -98,7 +108,9 @@ async def save_config(
         "BOT_TOKEN": bot_token,
         "APP_TOKEN": app_token,
         "API_KEY": api_key,
-        "LOCAL_HOST": local_host,
+        "OLLAMA_HOST": ollama_host,
+        "LM_STUDIO_HOST": lm_studio_host,
+        "OPEN_AI_HOST": open_ai_host,
         "ALLOWED_GROUP_CHANNEL_IDS": allowed_channels,
         "MODEL": model,
         "SYSTEM_MESSAGE": system_message.replace("\n", "\\n"),
@@ -111,6 +123,9 @@ async def save_config(
         "COMFYUI_STEPS": comfy_steps,
         "VISION_MODEL": vision_model,
         "MUSIC_GENERATION_PATH": music_generation,
+        "EMBEDDIN_MODEL" : embedding_model,
+        "PROVIDER": provider,
+        "SHOW_THINKING": show_thinking,
     }
 
     env_service.write_selected(updates)

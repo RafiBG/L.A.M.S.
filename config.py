@@ -9,7 +9,9 @@ class Config:
         self.BOT_TOKEN = os.getenv("BOT_TOKEN", "xoxb-placeholder")
         self.APP_TOKEN = os.getenv("APP_TOKEN", "xapp-placeholder")
         self.API_KEY = os.getenv("API_KEY", "")
-        self.LOCAL_HOST = os.getenv("LOCAL_HOST", "http://localhost:11434/v1")
+        self.OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434/v1")
+        self.LM_STUDIO_HOST = os.getenv("LM_STUDIO_HOST", "")
+        self.OPEN_AI_HOST = os.getenv("OPEN_AI_HOST", "")
         self.MODEL = os.getenv("MODEL", "qwen3-vl:2b-instruct-q4_K_M")
         self.SYSTEM_MESSAGE = os.getenv("SYSTEM_MESSAGE", "You are a helpful assistant.")
         self.SHORT_MEMORY = int(os.getenv("SHORT_MEMORY", "10"))
@@ -26,6 +28,10 @@ class Config:
         self.COMFYUI_STEPS = os.getenv("COMFYUI_STEPS", "20")
         self.VISION_MODEL = os.getenv("VISION_MODEL", "qwen3")
         self.MUSIC_GENERATION_PATH = os.getenv("MUSIC_GENERATION_PATH", "")
+        self.EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "")
+        self.PROVIDER = os.getenv("PROVIDER", "ollama")
+        self.SHOW_THINKING = os.getenv("SHOW_THINKING", "false").lower() == "true"
+
 
     def _get_required(self, name: str) -> str:
         # Changed to return empty string instead of crashing
