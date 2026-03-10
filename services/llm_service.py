@@ -54,7 +54,6 @@ class LLMService:
         self.python_tool = PythonExecutorTool(config)
 
         self.memory_service = MemoryService(config)
-
         
         # Base tools list static
         self.base_tools = [
@@ -66,29 +65,36 @@ class LLMService:
         self.python_tool.get_tool(),
 ]
 
-    def generate_reply(self, conversation_id: str, prompt: str, images=None) -> str:
+    def generate_reply(self, conversation_id: str, prompt: str, images = None) -> str:
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
 
         images_present = False
         final_prompt = prompt
+        pass_images_to_agent = None
 
-        # If images exist, describe them via Vision LLM first
         if images and len(images) > 0:
             images_present = True
-            image_description = self._describe_images(images, prompt)
-            final_prompt = (
-                "The user uploaded image(s).\n"
-                "Here is a description of what is in the image(s):\n"
-                f"{image_description}\n\n"
-                f"User's actual question about these images: {prompt}"
-            )
+            # Proxy Mode (Describe first)
+            if self.config.VISION_MODE == "proxy_vision":
+                image_description = self._describe_images(images, prompt)
+                final_prompt = (
+                    "The user uploaded image(s).\n"
+                    "Description of image(s):\n"
+                    f"{image_description}\n\n"
+                    f"User's question: {prompt}"
+                )
+                # Main Vision Mode
+            else:
+                pass_images_to_agent = images
 
-        # Run the agent with the prompt
+        # Run the agent
         response = self._run_agent(
             conversation_id,
             final_prompt,
-            images_present=images_present)
+            images_present = images_present,
+            raw_images = pass_images_to_agent,
+        )
         
         return response
 
@@ -110,59 +116,74 @@ class LLMService:
         ])
         return vision_response.content
 
-    def _run_agent(self, conversation_id, prompt, images_present=False):
-        llm = ChatOpenAI(**self.llm_params)
+    def _run_agent(self, conversation_id, prompt, images_present=False, raw_images=None):
+        # Selection logic
+        if raw_images and self.config.VISION_MODE == "main_vision":
+            llm = self.vision_llm
+        else:
+            llm = ChatOpenAI(**self.llm_params)
 
-        # Bind memory to this specific conversation
+        # Aggressive Tool Filtering
+        # If an image is present, REMOVE the image generation and memory tools 
+        # that might confuse a smaller model into "searching" for the image.
         memory_tool = MemoryTool(self.memory_service, conversation_id)
-        memory_tools = memory_tool.get_tools()
-
-        active_tools = self.base_tools + memory_tools
+        active_tools = self.base_tools + memory_tool.get_tools()
 
         if images_present:
-            active_tools = [t for t in active_tools if getattr(t, 'name', '') != "generate_comfy_image"]
+            forbidden_tools = ["generate_comfy_image", "search_memory"]
+            active_tools = [t for t in active_tools if getattr(t, 'name', '') not in forbidden_tools]
 
+        safe_prompt = prompt if (prompt and prompt.strip()) else "Describe this image in detail."
+
+        # Construct working payload
+        if raw_images and self.config.VISION_MODE == "main_vision":
+            content = [{"type": "text", "text": f"SYSTEM: You are currently looking at an image. Answer the user's question based ONLY on what you see.\nUSER: {safe_prompt}"}]
+            for img in raw_images:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{img['base64']}"}
+                })
+            agent_input_message = [HumanMessage(content=content)]
+        else:
+            agent_input_message = [HumanMessage(content=safe_prompt)]
+
+        #  Simplified prompt for Vision to prevent "Tool Hallucination"
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", self.config.SYSTEM_MESSAGE),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
+            MessagesPlaceholder(variable_name = "history"),
+            MessagesPlaceholder(variable_name = "input"),
+            MessagesPlaceholder(variable_name = "agent_scratchpad"),
         ])
 
         agent = create_tool_calling_agent(llm, active_tools, chat_prompt)
-
         agent_executor = AgentExecutor(
-            agent=agent,
-            tools=active_tools,
-            verbose=True,
+            agent = agent,
+            tools = active_tools,
+            verbose = True,
             handle_parsing_errors=True,
-            max_iterations=5
+            max_iterations = 4
         )
 
-        # Build execution input using your existing history_db
         history = self.history_db.get(conversation_id, [])
         
-        result = agent_executor.invoke({
-            "input": prompt,
-            "history": history
-        })
+        try:
+            result = agent_executor.invoke({
+                "input": agent_input_message,
+                "history": history
+            })
+            response = result.get("output", "")
+        except Exception as e:
+            print(f"Error: {e}")
+            response = "I had trouble seeing that image clearly."
 
-        response = result.get("output", "I'm sorry, I couldn't process that.")
-
-        # Update History (Standard logic)
-        if conversation_id not in self.history_db:
-            self.history_db[conversation_id] = []
-            
-        self.history_db[conversation_id].append(HumanMessage(content=prompt))
-        self.history_db[conversation_id].append(AIMessage(content=response))
-
-        # Memory Trimming
-        max_messages = int(self.config.SHORT_MEMORY) * 2
-        if len(self.history_db[conversation_id]) > max_messages:
-            self.history_db[conversation_id] = self.history_db[conversation_id][-max_messages:]
-        
         if self.config.SHOW_THINKING == False:
             response = self._strip_thinking(response)
+        # Save only text to history
+        if conversation_id not in self.history_db:
+            self.history_db[conversation_id] = []
+        
+        self.history_db[conversation_id].append(HumanMessage(content=safe_prompt))
+        self.history_db[conversation_id].append(AIMessage(content=response))
 
         return response
     
@@ -174,4 +195,6 @@ class LLMService:
         """Removes reasoning blocks from the output."""
         # Removes everything between <think> and </think>
         text = re.sub(r"<think>[\s\S]*?</think>", "", text)
+        # DeepSeek <thought> and </thought>
+        text = re.sub(r"\[thought\][\s\S]*?\[/thought\]", "", text,)
         return text.strip()

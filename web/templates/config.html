@@ -48,13 +48,24 @@
             </select>
         </div>
 
-    <div class="form-group">
-    <label for="show_thinking">Show Thinking Process</label>
-        <select id="show_thinking" name="show_thinking">
-            <option value="true" {% if show_thinking == "true" %}selected{% endif %}>Show (Keep &lt;think&gt; tags)</option>
-            <option value="false" {% if show_thinking == "false" %}selected{% endif %}>Hide (Strip &lt;think&gt; tags)</option>
-        </select>
-    </div>
+        <div class="form-group">
+            <label for="show_thinking">Show Thinking Process</label>
+                <select id="show_thinking" name="show_thinking">
+                    <option value="true" {% if show_thinking == "true" %}selected{% endif %}>Show (Keep &lt;think&gt; tags)</option>
+                    <option value="false" {% if show_thinking == "false" %}selected{% endif %}>Hide (Strip &lt;think&gt; tags)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="vision_mode">Vision Mode</label>
+                <select id="vision_mode" name="vision_mode">
+                    <option value="main_vision" {% if vision_mode == "main_vision" %}selected{% endif %}>Main Model Vision (Must support Multimodal)</option>
+                    <option value="proxy_vision" {% if vision_mode == "proxy_vision" %}selected{% endif %}> Separate Vision Model (Proxy Vision Model)</option>
+                </select>
+        </div>
+
+        <label>Proxy Vision Model (Only used in 'Proxy' mode)</label><br>
+        <input type="text" name="vision_model" value="{{ vision_model }}" style="width:100%; padding:8px;"><br>
 
         <label>Ollama Host</label><br>
         <input type="text" name="ollama_host" value="{{ ollama_host }}" style="width:100%; padding:8px;"><br>
@@ -82,9 +93,6 @@
         <input type="password" id="web_key" name="web_key" value="{{ web_key }}" style="width:100%; padding:8px;">
         <label><input type="checkbox" onclick="toggleVisibility('web_key')"> Show web key</label>
         <br>
-
-        <label>Vision Model</label><br>
-        <input type="text" name="vision_model" value="{{ vision_model }}" style="width:100%; padding:8px;"><br>
 
         <hr>
         <h3>ComfyUI Image Settings</h3>
