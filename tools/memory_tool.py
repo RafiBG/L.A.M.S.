@@ -1,33 +1,25 @@
-from langchain.tools import tool
+from langchain.agents import tool
 
 
 class MemoryTool:
-    def __init__(self, memory_service):
+    def __init__(self, memory_service, conversation_id: str):
         self.memory_service = memory_service
+        self.conversation_id = conversation_id
 
-    def get_tools(self, conversation_id: str):
-
-        @tool
-        def remember_information(info: str) -> str:
-            """
-            Save important information for this conversation.
-            Use when user says to remember something.
-            """
-            self.memory_service.save(conversation_id, info)
-            return "Saved to long term memory."
+    def get_tools(self):
 
         @tool
-        def recall_information(query: str) -> str:
-            """
-            Search long term memory for relevant information.
-            Use when user asks about something from the past.
-            """
-            results = self.memory_service.search(conversation_id, query)
+        def save_to_memory(text: str):
+            """Save important information to long-term memory."""
+            self.memory_service.save(self.conversation_id, text)
+            print(f"\n[Tool] Memory saved: {text}\n")
+            return "Saved to memory."
 
-            if not results:
-                return "No relevant long term memory found."
+        @tool
+        def search_memory(query: str):
+            """Search long-term memory for relevant past facts."""
+            results = self.memory_service.search(self.conversation_id, query)
+            print(f"\n[Tool] Memory recall: {query}\n")
+            return results if results else "No relevant memories found."
 
-            formatted = "\n".join(f"- {r}" for r in results)
-            return f"Found in memory:\n{formatted}"
-
-        return [remember_information, recall_information]
+        return [save_to_memory, search_memory]

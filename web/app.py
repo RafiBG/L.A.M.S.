@@ -71,7 +71,7 @@ async def config_page(request: Request):
             "comfy_steps": env_data.get("COMFYUI_STEPS"),
             "vision_model": env_data.get("VISION_MODEL"),
             "music_generation": env_data.get("MUSIC_GENERATION_PATH"),
-            "embedding_model" : env_data.get("EMBEDDIN_MODEL"),
+            "embedding_model": env_data.get("EMBEDDING_MODEL"),
             "provider": env_data.get("PROVIDER"),
             "show_thinking": env_data.get("SHOW_THINKING"),
         },

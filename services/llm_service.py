@@ -58,13 +58,13 @@ class LLMService:
         
         # Base tools list static
         self.base_tools = [
-            get_current_date,
-            get_current_time,
-            self.serper_web_search_tool.get_web_tool(),
-            self.comfy_image_tool.get_tool(),
-            self.music_generation_tool.get_tool(),
-            self.python_tool.get_tool(),
-        ]
+        get_current_date,
+        get_current_time,            
+        self.serper_web_search_tool.get_web_tool(),
+        self.comfy_image_tool.get_tool(),
+        self.music_generation_tool.get_tool(),
+        self.python_tool.get_tool(),
+]
 
     def generate_reply(self, conversation_id: str, prompt: str, images=None) -> str:
         if conversation_id not in self.history_db:
@@ -84,8 +84,12 @@ class LLMService:
                 f"User's actual question about these images: {prompt}"
             )
 
-        # Run the agent with the (possibly enhanced) prompt
-        response = self._run_agent(conversation_id, final_prompt, images_present=images_present)
+        # Run the agent with the prompt
+        response = self._run_agent(
+            conversation_id,
+            final_prompt,
+            images_present=images_present)
+        
         return response
 
     def _describe_images(self, images, user_prompt):
@@ -109,9 +113,9 @@ class LLMService:
     def _run_agent(self, conversation_id, prompt, images_present=False):
         llm = ChatOpenAI(**self.llm_params)
 
-        # Create memory tools bound to this conversation
-        memory_tool = MemoryTool(self.memory_service)
-        memory_tools = memory_tool.get_tools(conversation_id)
+        # Bind memory to this specific conversation
+        memory_tool = MemoryTool(self.memory_service, conversation_id)
+        memory_tools = memory_tool.get_tools()
 
         active_tools = self.base_tools + memory_tools
 
