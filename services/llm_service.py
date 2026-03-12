@@ -174,7 +174,7 @@ class LLMService:
             response = result.get("output", "")
         except Exception as e:
             print(f"Error: {e}")
-            response = "I had trouble seeing that image clearly."
+            response = "I am having trouble answering. Check the AI server if is running and the configuration."
 
         if self.config.SHOW_THINKING == False:
             response = self._strip_thinking(response)

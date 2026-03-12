@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="web/templates")
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    # We pull the live bot status from app.state
+    # Pull the live bot status from app.state
     manager = request.app.state.bot_manager
     is_running = manager.is_running
     
@@ -126,7 +126,7 @@ async def save_config(
         "VISION_MODEL": vision_model,
         "VISION_MODE": vision_mode,
         "MUSIC_GENERATION_PATH": music_generation,
-        "EMBEDDIN_MODEL" : embedding_model,
+        "EMBEDDING_MODEL" : embedding_model,
         "PROVIDER": provider,
         "SHOW_THINKING": show_thinking,
     }

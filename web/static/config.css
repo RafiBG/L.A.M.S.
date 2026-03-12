@@ -1,8 +1,14 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f6f9;
+    background-image: url("images/white-back.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Keeps bg still while scrolling */
+    
+    /* Fallback color if image is missing */
+    background-color: #f4f6f9; 
     color: #212529;
+    margin: 0;
 }
 
 /* Header */
@@ -152,31 +158,21 @@ hr {
 .red-p {
     color: red;
 }
+
 /* Select options */
 select {
   appearance: none;
   width: 180px;
   padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-
   color: #71717a;
   background-color: transparent;
-
+  margin: 0px 0px 16px;
   border: 1px solid #e4e4e7;
   border-radius: 8px;
-
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-
   font-family: inherit;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Custom arrow */
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%2371717a' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem;
 }
 
 select:focus-visible {
@@ -187,4 +183,177 @@ select:focus-visible {
 
 select:focus {
   color: #18181b;
+}
+
+.summary-size {
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding: 15px 20px;
+    letter-spacing: 0.5px;
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 5px 0 15px 0;
+}
+
+.toggle-text {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #1b6ec2; /* Matches your blue theme */
+}
+
+input:checked + .slider:before {
+    transform: translateX(14px);
+}
+ /* For the small helper text */
+.helper-text {
+    display: block;
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: -5px;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.flex-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.flex-item {
+    flex: 1;
+}
+
+.flex-item input {
+    width: 100% !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .toggle-text { color: #aaa; }
+    .slider { background-color: #444; }
+}
+
+/* Detects if user OS is in dark mode*/
+/* Automatic Dark Mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-image: url("images/dark-back.jpg");
+        /* This ensures the image covers the whole screen and doesn't stretch */
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        /* Keeps bg still while scrolling */
+
+        /* Fallback color if image is missing */
+        background-color: #0a0a20;
+        color: #ffffff;
+    }
+
+    .container {
+        background-color: #1e1e1e;
+        color: #fff;
+    }
+
+    .container h2 {
+        color: #4da3ff;
+        /* Lighter blue */
+    }
+
+    form label {
+        color: #eee;
+    }
+
+    form input[type="text"],
+    form input[type="number"],
+    form input[type="password"],
+    form textarea,
+    select {
+        background-color: #2c2c2c;
+        color: #fff;
+        border: 1px solid #444;
+    }
+
+    hr {
+        border-top: 1px solid #444;
+    }
+
+    form input[type="text"]:focus,
+    form input[type="number"]:focus,
+    form input[type="password"]:focus,
+    form textarea:focus,
+    select:focus {
+        background-color: #2c2c2c;
+        color: #ffffff;
+        border-color: #4da3ff;
+        box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.3);
+        outline: none;
+    }
+
+    select:focus {
+        color: #ffffff;
+    }
+
+    header {
+        background-color: #204b76;
+        border-bottom: 1px solid rgb(18, 71, 124);
+        box-shadow: 0 2px 6px #000000;
+    }
+
+    form button {
+    background-color: #204b76;
+    }
+
+    .container {
+    box-shadow: 0 6px 18px #96969666;
+    transition: box-shadow 0.2s ease;
+    }
+
+.container:hover {
+    box-shadow: 0 8px 24px #6a6a6a66;
+    }
 }

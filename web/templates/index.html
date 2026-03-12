@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slack Bot</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/index.css">
 </head>
 <body>
 
@@ -32,13 +32,12 @@
         </span>
 
         <button id="toggle-btn" type="button" class="{{ 'stop' if status_text == 'online' else 'start' }}">
-    {{ button_text }}
-</button>
+            {{ button_text }}
+        </button>
     </div>
 
-    <p class="note">
-        Note: Ensure your local LLM server is running before starting the bot.
-    </p>
+    <p class="note">Note: Ensure your local LLM server is running and the configuration is saved.</p>
+
 </main>
 
 <script>
