@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration</title>
     <link rel="stylesheet" href="/static/config.css">
 </head>
@@ -9,7 +11,6 @@
 <header>
     <div class="header-inner">
         <h1>Slack Bot Configuration</h1>
-
         <div class="nav-links">
             <a href="/" class="nav-item">Dashboard</a>
             <a href="/config" class="nav-item active">Configuration</a>
@@ -17,82 +18,164 @@
     </div>
 </header>
 
-
 <main class="container">
-    <h2>Bot Configuration</h2>
+    <h2>Bot Settings</h2>
     <hr>
 
     <form method="post" action="/config">
 
-        <label>Bot Token</label><br>
-        <input type="password" id="bot_token" name="bot_token" value="{{ bot_token }}" style="width:100%; padding:8px;">
-        <label><input type="checkbox" onclick="toggleVisibility('bot_token')"> Show bot token</label>
-        <br>
+        <details class="config-section" open>
+            <summary class="summary-size">Authentication & API Keys</summary>
+            
+            <label for="bot_token">Bot Token</label>
+            <small class="helper-text">Your Slack Bot User OAuth Token (starts with xoxb-)</small>
+            <input type="password" id="bot_token" name="bot_token" value="{{ bot_token }}">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleVisibility('bot_token')">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">Show Bot Token</span>
+            </div>
+            
+            <label for="app_token">App Token</label>
+            <small class="helper-text">Slack App-Level Token for Socket Mode (starts with xapp-)</small>
+            <input type="password" id="app_token" name="app_token" value="{{ app_token }}">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleVisibility('app_token')">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">Show App Token</span>
+            </div>
 
-        <label>App Token</label><br>
-        <input type="password" id="app_token" name="app_token" value="{{ app_token }}" style="width:100%; padding:8px;">
-        <label><input type="checkbox" onclick="toggleVisibility('app_token')"> Show app token</label>
-        <br>
+            <label for="api_key">General API Key</label>
+            <small class="helper-text">The API key for your LLM provider (OpenAI, Anthropic, etc.)</small>
+            <input type="password" id="api_key" name="api_key" value="{{ api_key }}">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleVisibility('api_key')">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">Show API Key</span>
+            </div>
 
-        <label>Api Key</label><br>
-        <input type="password" id="api_key" name="api_key" value="{{ api_key }}" style="width:100%; padding:8px;">
-        <label><input type="checkbox" onclick="toggleVisibility('api_key')"> Show api key</label>
-        <br>
+            <label for="web_key">Serper Web Search Key</label>
+            <small class="helper-text">Required key from Serper.dev for live web browsing capabilities</small>
+            <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleVisibility('web_key')">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">Show Web Key</span>
+            </div>
+        </details>
 
-        <label>Local Host</label><br>
-        <input type="text" name="local_host" value="{{ local_host }}" style="width:100%; padding:8px;"><br>
+        <details class="config-section">
+            <summary class="summary-size">Model & Provider Settings</summary>
 
-        <label>Allowed Group Channels Ids</label><br>
-        <input type="text" name="allowed_channels" value="{{ allowed_channels }}" style="width:100%; padding:8px;"><br>
+            <label for="provider">LLM Provider</label>
+            <small class="helper-text">Choose the platform hosting your AI model</small>
+            <select id="provider" name="provider">
+                <option value="ollama" {% if provider == "ollama" %}selected{% endif %}>Ollama (Local)</option>
+                <option value="lmstudio" {% if provider == "lmstudio" %}selected{% endif %}>LM Studio (Local)</option>
+                <option value="openai" {% if provider == "openai" %}selected{% endif %}>OpenAI Cloud</option>
+            </select>
 
-        <label>Model</label><br>
-        <input type="text" name="model" value="{{ model }}" style="width:100%; padding:8px;"><br>
+            <label for="model">Main Model Name</label>
+            <small class="helper-text">Exact model string (e.g., 'llama3.1', 'gpt-4o', or 'deepseek-v3')</small>
+            <input type="text" name="model" value="{{ model }}">
 
-        <label>System Message</label><br>
-        <textarea name="system_message" rows="8" style="width:100%; padding:10px;">{{ system_message }}</textarea>
+            <label for="ollama_host">Ollama Host</label>
+            <small class="helper-text">Standard: http://localhost:11434/v1</small>
+            <input type="text" name="ollama_host" value="{{ ollama_host }}">
 
-        <label>Short Memory (Number of messages)</label><br>
-        <input type="number" name="short_memory" value="{{ short_memory }}" style="width:100%; padding:8px;"><br>
-        <br>
+            <label for="lm_studio_host">LM Studio Host</label>
+            <small class="helper-text">Standard:http://127.0.0.1:1234/v1 or http://localhost:1234/v1</small>
+            <input type="text" name="lm_studio_host" value="{{ lm_studio_host }}">
 
-        <label>Serper Web Search Key </label><br>
-        <input type="password" id="web_key" name="web_key" value="{{ web_key }}" style="width:100%; padding:8px;">
-        <label><input type="checkbox" onclick="toggleVisibility('web_key')"> Show web key</label>
-        <br>
+            <label for="open_ai_host">Cloud Host URL</label>
+            <small class="helper-text">The API endpoint for your cloud provider</small>
+            <input type="text" name="open_ai_host" value="{{ open_ai_host }}">
+        </details>
 
-        <label>Vision Model</label><br>
-        <input type="text" name="vision_model" value="{{ vision_model }}" style="width:100%; padding:8px;"><br>
+        <details class="config-section">
+            <summary class="summary-size">Behavior & Memory</summary>
+
+            <label for="system_message">System Message (Prompt)</label>
+            <small class="helper-text">The base instructions that define the bot's persona</small>
+            <textarea name="system_message" rows="6">{{ system_message }}</textarea>
+
+            <label for="show_thinking">Reasoning Process</label>
+            <small class="helper-text">For DeepSeek, Qwen and other models: do you want to see the 'hidden' thoughts ?</small>
+            <select id="show_thinking" name="show_thinking">
+                <option value="true" {% if show_thinking == "true" %}selected{% endif %}>Show</option>
+                <option value="false" {% if show_thinking == "false" %}selected{% endif %}>Hide</option>
+            </select>
+
+            <label for="short_memory">Short Memory (Messages count)</label>
+            <small class="helper-text">Number of recent messages to keep in active context</small>
+            <input type="number" name="short_memory" value="{{ short_memory }}">
+
+            <label for="allowed_channels">Allowed Group Channels IDs</label>
+            <small class="helper-text">Comma-separated list (e.g., C12345, C67890)</small>
+            <input type="text" name="allowed_channels" value="{{ allowed_channels }}">
+            
+            <label for="embedding_model">Embedding Model</label>
+            <small class="helper-text">Used for RAG and local document knowledge</small>
+            <input type="text" name="embedding_model" value="{{ embedding_model }}">
+        </details>
+
+        <details class="config-section">
+            <summary class="summary-size">Vision Settings</summary>
+
+            <label for="vision_mode">Vision Mode</label>
+            <small class="helper-text">Main: Model has vision built-in | Proxy: Use a second model for eyes</small>
+            <select id="vision_mode" name="vision_mode">
+                <option value="main_vision" {% if vision_mode == "main_vision" %}selected{% endif %}>Main Model Vision</option>
+                <option value="proxy_vision" {% if vision_mode == "proxy_vision" %}selected{% endif %}>Separate Proxy Vision Model</option>
+            </select>
+
+            <label for="vision_model">Proxy Vision Model Name</label>
+            <small class="helper-text">Model used for image analysis (e.g., 'llava' or 'moondream')</small>
+            <input type="text" name="vision_model" value="{{ vision_model }}">
+        </details>
+
+        <details class="config-section">
+            <summary class="summary-size">Image & Music Generation</summary>
+            
+            <label for="comfy_api">ComfyUI API URL</label>
+            <small class="helper-text">Address where ComfyUI is running (Default: http://127.0.0.1:8188)</small>
+            <input type="text" name="comfy_api" value="{{ comfy_api }}">
+
+            <label for="comfy_image_path">Image Output Folder</label>
+            <small class="helper-text">Absolute local path where images are saved</small>
+            <input type="text" name="comfy_image_path" value="{{ comfy_image_path }}">
+
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 1; width:100%; padding:8px;">
+                    <label>Width</label>
+                    <input type="number" name="comfy_image_width" value="{{ comfy_image_width }}">
+                </div>
+                <div style="flex: 1; width:100%; padding:8px;">
+                    <label>Height</label>
+                    <input type="number" name="comfy_image_height" value="{{ comfy_image_height }}">
+                </div>
+                <div style="flex: 2; width:100%; padding:8px;">
+                    <label>Steps</label>
+                    <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
+                </div>
+            </div>
+
+            <label for="music_generation">Music Output Folder</label>
+            <small class="helper-text">Local directory for generated audio files</small>
+            <input type="text" name="music_generation" value="{{ music_generation }}">
+        </details>
 
         <hr>
-        <h3>ComfyUI Image Settings</h3>
-        
-        <label>ComfyUI API URL (e.g., http://127.0.0.1:8188)</label><br>
-        <input type="text" name="comfy_api" value="{{ comfy_api }}" style="width:100%; padding:8px;"><br>
-
-        <label>Image Output Path (Local Folder)</label><br>
-        <input type="text" name="comfy_image_path" value="{{ comfy_image_path }}" style="width:100%; padding:8px;"><br>
-        
-        <div style="display: flex; gap: 20px;">
-            <div style="flex: 1;">
-                <label>Width</label><br>
-                <input type="number" name="comfy_image_width" value="{{ comfy_image_width }}" style="width:100%; padding:8px;">
-            </div>
-            <div style="flex: 1;">
-                <label>Height</label><br>
-                <input type="number" name="comfy_image_height" value="{{ comfy_image_height }}" style="width:100%; padding:8px;">
-            </div>
-            <div style="flex: 1;">
-                <label>Steps</label><br>
-                <input type="number" name="comfy_steps" value="{{ comfy_steps }}" style="width:100%; padding:8px;">
-            </div>
-        </div>
-
-        <label>Music Output Path (Local Folder)</label><br>
-        <input type="text" name="music_generation" value="{{ music_generation }}" style="width:100%; padding:8px;"><br>
-        <br>
-
-        <button type="submit">Save Configuration</button>
-        <p class="red-p">After you press the save button restart the whole program for the changes to apply.</p>
+        <button type="submit" class="save-btn">Save Configuration</button>
+        <p class="red-p"><strong>Note:</strong> Restart the program after saving to apply changes.</p>
 
     </form>
 </main>
@@ -101,7 +184,7 @@
     function toggleVisibility(id) {
         const input = document.getElementById(id);
         input.type = input.type === "password" ? "text" : "password";
-}
+    }
 </script>
 
 </body>

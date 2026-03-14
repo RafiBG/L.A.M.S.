@@ -27,7 +27,7 @@ def main():
         app.state.bot_manager = bot_manager
         app.state.llm_service = llm_service
 
-        browser_timer = Timer(2.5, open_browser)
+        browser_timer = Timer(1.5, open_browser)
         browser_timer.daemon = True
         browser_timer.start()
 

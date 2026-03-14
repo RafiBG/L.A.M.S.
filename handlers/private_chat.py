@@ -19,6 +19,13 @@ class PrivateChatHandler:
         raw_text = event.get("text", "")
         user_input = raw_text.strip()
 
+        # If text is still empty, check if it's in the first file's title or comment
+        if not raw_text and "files" in event:
+            # Slack often puts the message in the 'initial_comment' of the first file
+            raw_text = event["files"][0].get("initial_comment", "") or event["files"][0].get("title", "")
+
+        user_input = raw_text.strip()
+
         if user_input.lower().startswith("!forget"):
             return self._handle_forget_command(conv_id, thread_ts, client)
         
@@ -51,7 +58,7 @@ class PrivateChatHandler:
                 )
             else:
                 # Debug info
-                print("DEBUG: File extraction resulted in no text.")
+                print("DEBUG: File extraction resulted in no text or there was no text to the image.")
 
         # Get LLM Response
         client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
@@ -133,10 +140,12 @@ class PrivateChatHandler:
 
         for file_info in files:
             file_url = file_info.get("url_private_download")
+            file_name = file_info.get("name", "unknown_file")
+            
             if not file_url:
                 continue
 
-            file_name = file_info.get("name")
+            # Create a unique temp path
             temp_path = f"temp_{int(time.time())}_{file_name}"
             extension = os.path.splitext(file_name)[1].lower()
 
@@ -148,35 +157,37 @@ class PrivateChatHandler:
                 )
 
                 if resp.status_code != 200:
+                    print(f"DEBUG: Failed to download {file_name}. Status: {resp.status_code}")
                     continue
 
                 with open(temp_path, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=8192):
                         f.write(chunk)
 
-                time.sleep(0.3)
+                # Ensure OS has released the file handle
+                time.sleep(0.5) 
 
-                # TEXT FILES
+                content = ""
+                # TEXT EXTRACTION
                 if extension == ".pdf":
                     loader = PyPDFLoader(temp_path)
                     docs = loader.load()
                     content = "\n".join([d.page_content for d in docs])
-                    extracted_text.append(f"--- FILE: {file_name} ---\n{content}")
-
                 elif extension in [".docx", ".doc"]:
                     loader = Docx2txtLoader(temp_path)
                     docs = loader.load()
                     content = "\n".join([d.page_content for d in docs])
-                    extracted_text.append(f"--- FILE: {file_name} ---\n{content}")
-
                 elif extension in [".txt", ".md", ".py", ".json", ".csv"]:
                     loader = TextLoader(temp_path, encoding="utf-8")
                     docs = loader.load()
                     content = "\n".join([d.page_content for d in docs])
+                
+                # If text was found, add it
+                if content.strip():
                     extracted_text.append(f"--- FILE: {file_name} ---\n{content}")
 
-                # IMAGE FILES
-                elif extension in [".png", ".jpg", ".jpeg"]:
+                # IMAGE HANDLING
+                if extension in [".png", ".jpg", ".jpeg"]:
                     with open(temp_path, "rb") as img_file:
                         encoded = base64.b64encode(img_file.read()).decode("utf-8")
                         extracted_images.append({
@@ -184,21 +195,16 @@ class PrivateChatHandler:
                             "base64": encoded
                         })
 
-                else:
-                    print(f"Unsupported file type: {extension}")
-
             except Exception as e:
                 print(f"Error processing {file_name}: {e}")
 
             finally:
                 if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except Exception as e:
-                        print(f"Could not delete temp file: {e}")
+                    os.remove(temp_path)
 
-        # Return must be OUTSIDE the loop
-        return extracted_text, extracted_images
+        # Join all text blocks into one string for the prompt
+        final_text_context = "\n\n".join(extracted_text)
+        return final_text_context, extracted_images
     
     def _handle_forget_command(self, conv_id, thread_ts, client):
             """Clears the LLM memory for the specific conversation."""

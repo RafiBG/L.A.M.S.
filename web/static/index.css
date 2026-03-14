@@ -1,8 +1,34 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f6f9;
+    background-image: url("images/white-back.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Keeps bg still while scrolling */
+    
+    /* Fallback color if image is missing */
+    background-color: #f4f6f9; 
     color: #212529;
+    margin: 0;
+}
+
+/* Base Container Style */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+.status-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background-color: #f8f9fa;
 }
 
 /* Layout Header */
@@ -32,10 +58,10 @@ header h1 {
 
 /* Navigation container - push links to the right */
 .nav-links {
-    margin-left: auto; /* pushes nav to the right */
+    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 1rem; /* space between links */
+    gap: 1rem;
 }
 
 /* Individual nav links - MVC-style buttons */
@@ -120,14 +146,16 @@ button {
     transition: background-color 0.15s ease-in-out;
 }
 
-button.start{
-    background-color: #28a745; /* green */
+button.start {
+    /* green */
+    background-color: #28a745;
     color: #fff;
     border: 1px solid #28a745;
 }
 
 button.stop {
-    background-color: #dc3545; /* red */
+    /* red */
+    background-color: #dc3545;
     color: #fff;
     border: 1px solid #dc3545;
 }
@@ -154,4 +182,60 @@ button:disabled {
     margin-top: 1.5rem;
     font-size: 0.9rem;
     color: #6c757d;
+}
+
+/* Detects if user OS is in dark mode */
+/* Automatic Dark Mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-image: url("images/dark-back.jpg")  ;
+        /* This ensures the image covers the whole screen and doesn't stretch */
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed; /* Keeps bg still while scrolling */
+        
+        /* Fallback color if image is missing */
+        background-color: #0a0a20 ; 
+        color: #ffffff ;
+    }
+    .container {
+        background-color: #1a1a1a;
+        color: #fff;
+    }
+    .container h2 {
+        color: #4da3ff;
+    }
+    .status-box {
+        background-color: #252525;
+        border-color: #444;
+    }
+    .status {
+        color: #fff;
+    }
+
+    .status .offline { color: #ff4d4d; }
+    .status .online { color: #2ecc71; }
+
+    hr {
+        border-top: 1px solid #444;
+    }
+
+    header {
+        background-color: #204b76;
+        border-bottom: 1px solid rgb(18, 71, 124);
+        box-shadow: 0 2px 6px #000000;
+    }
+
+    form button {
+    background-color: #204b76;
+    }
+
+     .container {
+    box-shadow: 0 6px 18px #96969666;
+    transition: box-shadow 0.2s ease;
+    }
+
+.container:hover {
+    box-shadow: 0 8px 24px #6a6a6a66;
+    } 
 }

@@ -164,7 +164,6 @@ class GroupChatHandler:
                     except Exception as e:
                         print(f"Could not delete temp file: {e}")
 
-        # Return must be OUTSIDE the loop
         return extracted_text, extracted_images
 
     
@@ -173,8 +172,8 @@ class GroupChatHandler:
         path = self.llm_service.config.COMFYUI_IMAGE_PATH
         initial_files = set(os.listdir(path))
         
-        # Poll for up to 4.5 minutes
-        for _ in range(90):
+        # Poll for up to 10 minutes
+        for _ in range(200):
             time.sleep(3)
             current_files = set(os.listdir(path))
             new_files = current_files - initial_files
@@ -198,7 +197,6 @@ class GroupChatHandler:
                 
     def _music_watcher_thread(self, channel, client, thread_ts):
         """Watches for a new .wav file and uploads it to the Slack thread."""
-        # Ensure your Config class has MUSIC_GENERATION_PATH (the folder where Flask saves)
         path = self.llm_service.config.MUSIC_GENERATION_PATH 
         
         if not os.path.exists(path):
