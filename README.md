@@ -12,6 +12,7 @@ inside your Slack workspace.
 **What can this local AI do in Slack?**
 
 * 💬 **Chat:** Natural conversation with context awareness.
+* 🧠 **On-Demand RAG Memory:** A specialized tool that allows users to explicitly save information to a channel-specific vector database. The bot only accesses this memory for the specific channel where it was saved, ensuring privacy and context relevance.
 * 📄 **File Analysis:** Upload **PDF, TXT, or DOCX** files, and the bot will read and answer questions based on them.
 * 👁️ **Vision:** Upload images and ask the bot to describe or analyze them (requires a Vision model).
 * 🕒 **Local Time and Date** Retrieve current system time and date.
@@ -347,6 +348,17 @@ In Direct Messages (Private Chat)
 
 ## 📸 Gallery & Examples
 
+**Web Interface (Adaptive OS Light/Dark Mode)**
+<p float="left">
+ <img src="https://github.com/user-attachments/assets/38a539fe-c788-4968-91a8-ce5e9a2c987a" width="30%" />
+ <img src="https://github.com/user-attachments/assets/4fa8cb34-0e2a-4282-acf7-78d589bb0a3a" width="30%" />
+</p>
+
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/d7b99887-6f05-45ef-8ea2-8e66d49b570c" width="30%" />
+  <img src="https://github.com/user-attachments/assets/51e89cd7-b7c0-4b11-933c-380f53111987" width="30%" />
+</p>
+
 **Chat & Vision Capabilities**
 <p float="left">
  <img src="https://github.com/user-attachments/assets/ab45716e-6e53-47ec-9a7c-5656de4d02ef" width="30%" />
@@ -370,3 +382,7 @@ In Direct Messages (Private Chat)
   <img src="https://github.com/user-attachments/assets/4564afd3-52c8-42e3-8d83-7425e4069aa3" width="30%" />
 </p>
 
+**RAG/Vector Memory**
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/6e994d4a-8513-4eb3-a8a7-359bbc087745" width="30%" />
+</p>
