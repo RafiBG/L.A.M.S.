@@ -188,7 +188,7 @@ button:disabled {
 /* Automatic Dark Mode */
 @media (prefers-color-scheme: dark) {
     body {
-        background-image: url("images/dark-back.jpg")  ;
+        background-image: url("images/dark-back.jpg");
         /* This ensures the image covers the whole screen and doesn't stretch */
         background-size: cover;
         background-position: center;

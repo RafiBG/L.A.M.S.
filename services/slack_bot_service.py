@@ -32,18 +32,26 @@ class SlackBotService:
         self._register_handlers()
 
     def _register_handlers(self) -> None:
-        @self.app.event("app_mention")
-        def handle_mention(event, say, client):
-            # This only fires in channels/groups when @bot is tagged
-            thread_ts = event.get("thread_ts") or event.get("ts")
-            self.group_handler.handle(event, say, client, thread_ts)
+        #@self.app.event("app_mention")
+        #def handle_mention(event, say, client):
+            ## This only fires in channels/groups when @bot is tagged
+            #thread_ts = event.get("thread_ts") or event.get("ts")
+            #self.group_handler.handle(event, say, client, thread_ts)
 
         @self.app.event("message")
         def handle_message(event, say, client):
-            # Check if this is a Direct Message (IM)
-            # This prevents the bot from replying twice in groups
-            if event.get("channel_type") == "im":
+            if event.get("bot_id"): return # Ignore bots
+
+            channel_type = event.get("channel_type")
+            
+            if channel_type == "im":
+                # Private chats
                 self.private_handler.handle(event, say, client)
+            
+            elif channel_type in ["channel", "group"]:
+                # Group chats with response decision
+                thread_ts = event.get("thread_ts") or event.get("ts")
+                self.group_handler.handle(event, say, client, thread_ts)
 
         # Register slash commands
         self.slash_clear_handler.register_commands(self.app)

@@ -14,9 +14,45 @@ class GroupChatHandler:
         if event.get("bot_id") is not None:
             return
         
+        # Get Bot Identity
+        auth_info = client.auth_test()
+        bot_user_id = auth_info["user_id"]
+        user_info = client.users_info(user=bot_user_id)
+        bot_name = user_info["user"]["real_name"]
+
         conv_id = event.get("channel")
-        user_id = event.get("user")
+        #user_id = event.get("user")
         raw_text = event.get("text", "")
+
+        # --- DECISION LOGIC ---
+        should_respond = False
+        reason = ""
+
+        # Check for Direct Tag
+        if f"<@{bot_user_id}>" in raw_text:
+            should_respond = True
+            reason = "[FORCED: Tagged]"
+        
+        # Check for Thread Reply (if the bot started/joined the thread)
+        elif event.get("thread_ts") and event.get("parent_user_id") == bot_user_id:
+            should_respond = True
+            reason = "[FORCED: Thread Reply]"
+
+        # Fallback to AI Decision Agent
+        if not should_respond:
+            should_respond = self._ai_wants_to_respond(raw_text, bot_name)
+            reason = "[CHOICE: AI Decision]" if should_respond else "[SKIP: AI Ignored]"
+
+        status = "RESPONDING" if should_respond else "IGNORING"
+        print(f"--- Decision: {status} ---")
+        print(f"Reason: {reason}")
+        print(f"Message: '{raw_text.strip()}'")
+        print(f"--------------------------")
+
+        # Exit early if we aren't responding
+        if not should_respond:
+            return
+        # --- Proceed with Response ---
         
         # Strip bot mention from user input
         user_input = re.sub(r'<@.*?>', '', raw_text).strip()
@@ -232,3 +268,42 @@ class GroupChatHandler:
                     return # Exit thread after successful upload
                     
         print(f"Music generation timed out for channel {channel}")
+
+    def _ai_wants_to_respond(self, last_message, bot_name):
+        """Replicates the strict Decision Agent logic."""
+        prompt_bot_name = f"{bot_name}, AI, Bot, Assistant"
+        
+        # This matches your specific C# string interpolation logic
+        decision_prompt = (
+            "You are a decision agent.\n"
+            "Your ONLY job is to decide if the AI should respond to the **LAST message below**.\n"
+            "Ignore all earlier messages.\n"
+            "Focus ONLY on the last line. Output 'yes' or 'no'.\n\n"
+            "CONTEXT:\n"
+            "- This is a Slack group chat.\n"
+            f"- The AI's name or nicknames: [{prompt_bot_name}]\n\n"
+            "RESPOND with 'yes' if **ANY** are true for the LAST MESSAGE:\n"
+            f"1. It mentions the AI by name/nickname (e.g., AI, bot, assistant, {bot_name})\n"
+            "2. It is a direct question (contains ?, or words like 'what', 'how', 'help', 'tell me')\n"
+            "3. It is a direct command/request (e.g., 'respond', 'talk to me', 'answer')\n\n"
+            "RESPOND with 'no' if:\n"
+            "- The last message is just 'hi', 'hello', 'hey' with NO name/tag.\n"
+            "- It says 'stop', 'shut up', etc.\n\n"
+            f"**LAST MESSAGE TO EVALUATE:** {last_message}"
+        )
+
+        try:
+            # Call the quick_query method in your llm_service
+            response = self.llm_service.quick_query(decision_prompt).strip().lower()
+            
+            # Strict cleaning to ensure we only catch "yes"
+            # Some LLMs might say "Yes." or "Decision: yes", so we check starts_with
+            is_yes = response.startswith("yes") or response == "y"
+            
+            return is_yes
+        except Exception as e:
+            # If the LLM call fails, we print the error and default to False (Ignore)
+            print(f"[Decision Fallback] Error: {e}")
+            return False
+        
+    
