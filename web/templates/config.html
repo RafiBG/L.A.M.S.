@@ -60,16 +60,6 @@
                 <span class="toggle-text">Show API Key</span>
             </div>
 
-            <label for="web_key">Serper Web Search Key</label>
-            <small class="helper-text">Required key from Serper.dev for live web browsing capabilities</small>
-            <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" onclick="toggleVisibility('web_key')">
-                    <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">Show Web Key</span>
-            </div>
         </details>
 
         <details class="config-section">
@@ -125,6 +115,32 @@
             <label for="embedding_model">Embedding Model</label>
             <small class="helper-text">Used for RAG and local document knowledge</small>
             <input type="text" name="embedding_model" value="{{ embedding_model }}">
+        </details>
+
+        <details class="config-section">
+            <summary class="summary-size">Web Search Settings</summary>
+    
+            <label for="search_provider">Search Engine Provider</label>
+            <small class="helper-text">Serper is Cloud-based (requires API Key) | SearXNG is Local (Docker)</small>
+            <select id="search_provider" name="search_provider">
+                <option value="serper" {% if search_provider == "serper" %}selected{% endif %}>Serper.dev (Cloud)</option>
+                <option value="searxng" {% if search_provider == "searxng" %}selected{% endif %}>SearXNG (Local Docker)</option>
+            </select>
+
+            <label for="web_key">Serper API Key</label>
+            <small class="helper-text">Required only if using Serper.dev</small>
+            <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" onclick="toggleVisibility('web_key')">
+                    <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">Show Serper Key</span>
+            </div>
+
+            <label for="searxng_host">SearXNG Host URL</label>
+            <small class="helper-text">Standard Docker address (e.g., http://localhost:8080)</small>
+            <input type="text" name="searxng_host" value="{{ searxng_host }}">
         </details>
 
         <details class="config-section">

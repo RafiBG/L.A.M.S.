@@ -75,6 +75,8 @@ async def config_page(request: Request):
             "embedding_model": env_data.get("EMBEDDING_MODEL"),
             "provider": env_data.get("PROVIDER"),
             "show_thinking": env_data.get("SHOW_THINKING"),
+            "search_provider": env_data.get("SEARCH_PROVIDER"),
+            "searxng_host": env_data.get("SEARXNG_HOST", "http://localhost:8080")
         },
     )
 
@@ -103,6 +105,8 @@ async def save_config(
     embedding_model: str = Form(...),
     provider: str = Form(...),
     show_thinking: str = Form(...),
+    search_provider: str = Form(...),
+    searxng_host: str = Form(...),
     
     
 ):
@@ -129,6 +133,8 @@ async def save_config(
         "EMBEDDING_MODEL" : embedding_model,
         "PROVIDER": provider,
         "SHOW_THINKING": show_thinking,
+        "SEARCH_PROVIDER": search_provider,
+        "SEARXNG_HOST": searxng_host,
     }
 
     env_service.write_selected(updates)

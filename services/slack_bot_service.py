@@ -42,6 +42,10 @@ class SlackBotService:
         def handle_message(event, say, client):
             if event.get("bot_id"): return # Ignore bots
 
+            # STOP RETRIES: If Slack is retrying because the AI is slow, ignore the retry.
+            if event.get("headers", {}).get("x-slack-retry-num"):
+                return
+            
             channel_type = event.get("channel_type")
             
             if channel_type == "im":

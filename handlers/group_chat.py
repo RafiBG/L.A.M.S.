@@ -95,14 +95,17 @@ class GroupChatHandler:
 
         # Handle Search Sources (Attachments)
         attachments = []
-        serper_links = getattr(self.llm_service.serper_web_search_tool, 'latest_links', [])
-        if serper_links:
+        provider, search_links = self.llm_service.get_latest_search_info()
+
+        if search_links:
             attachments.append({
                 "color": "#36a64f",
-                "title": "🔗 Research Sources",
-                "text": "\n".join([f"• {link}" for link in serper_links])
+                "title": f"🔗 Research Sources (via {provider})",
+                "text": "\n".join([f"• {link}" for link in search_links])
             })
-            self.llm_service.serper_web_search_tool.latest_links = []
+
+            # Clear after fetching so they don't appear in the next message
+            #self.llm_service.get_latest_search_links = []
 
         # Final UI Update
         # Ensures that even if final_text is weirdly empty, the "Thinking" text is replaced

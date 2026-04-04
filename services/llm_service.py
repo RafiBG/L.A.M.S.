@@ -8,11 +8,12 @@ from langchain.agents import AgentExecutor
 from langchain.agents import create_tool_calling_agent
 # Tools
 from tools.time_tool import get_current_date, get_current_time
-from tools.serper_web_search import SerperSearchTool
+from tools.serper_web_tool import SerperSearchTool
 from tools.comfy_tool import ComfyUIImageTool
 from tools.music_generation_tool import MusicGenerationTool
 from tools.python_executor_tool import PythonExecutorTool
 from tools.memory_tool import MemoryTool
+from tools.searxng_web_tool import SearXNGTool
 
 from services.memory_service import MemoryService
 from config import Config
@@ -32,6 +33,15 @@ class LLMService:
             llm_base_url = config.OPEN_AI_HOST or "https://api.openai.com/v1"
         else:
             raise ValueError(f"Unsupported provider: {config.PROVIDER}")
+        
+        if config.SEARCH_PROVIDER.lower() == "searxng":
+            self.searxng_tool = SearXNGTool(config.SEARXNG_HOST) 
+            web_tool = self.searxng_tool.get_tool()
+            print(f"DEBUG: Web Search initialized using SearXNG at {config.SEARXNG_HOST}")
+        else:
+            self.search_engine = SerperSearchTool(config.SERPER_API_KEY)
+            web_tool = self.search_engine.get_web_tool()
+            print(f"DEBUG: Web Search initialized using Serper API")
 
         self.llm_params = {
             "openai_api_key": config.API_KEY,
@@ -62,7 +72,7 @@ class LLMService:
         self.base_tools = [
         get_current_date,
         get_current_time,            
-        self.serper_web_search_tool.get_web_tool(),
+        web_tool, # This will now be EITHER SearXNG or Serper
         self.comfy_image_tool.get_tool(),
         self.music_generation_tool.get_tool(),
         self.python_tool.get_tool(),
@@ -222,3 +232,22 @@ class LLMService:
         except Exception as e:
             print(f"LLM Quick Query Error: {e}")
             return "no"
+        
+    def get_latest_search_info(self):
+        """Returns a tuple of (provider_name, links_list)"""
+        links = []
+
+        # Check SearXNG
+        if hasattr(self, "searxng_tool") and self.searxng_tool.latest_links:
+            links.extend(self.searxng_tool.latest_links)
+            self.searxng_tool.latest_links = [] # Clear links to not appear in next message
+            return "SearXNG", links
+
+        # Check Serper
+        if hasattr(self, 'search_engine') and self.search_engine.latest_links:
+            links = list(self.search_engine.latest_links)
+            self.search_engine.latest_links = [] # Clear
+            return "Serper", links
+
+
+        return None, []
