@@ -32,6 +32,8 @@ class Config:
         self.EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "")
         self.PROVIDER = os.getenv("PROVIDER", "ollama")
         self.SHOW_THINKING = os.getenv("SHOW_THINKING", "false").lower() == "true"
+        self.SEARCH_PROVIDER = os.getenv("SEARCH_PROVIDER", "serper") # "serper" or "searXNG"
+        self.SEARXNG_HOST = os.getenv("SEARXNG_HOST", "http://localhost:8080")
 
 
     def _get_required(self, name: str) -> str:

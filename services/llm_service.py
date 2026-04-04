@@ -1,3 +1,4 @@
+from click import prompt
 import httpx, re
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -7,11 +8,12 @@ from langchain.agents import AgentExecutor
 from langchain.agents import create_tool_calling_agent
 # Tools
 from tools.time_tool import get_current_date, get_current_time
-from tools.serper_web_search import SerperSearchTool
+from tools.serper_web_tool import SerperSearchTool
 from tools.comfy_tool import ComfyUIImageTool
 from tools.music_generation_tool import MusicGenerationTool
 from tools.python_executor_tool import PythonExecutorTool
 from tools.memory_tool import MemoryTool
+from tools.searxng_web_tool import SearXNGTool
 
 from services.memory_service import MemoryService
 from config import Config
@@ -31,6 +33,15 @@ class LLMService:
             llm_base_url = config.OPEN_AI_HOST or "https://api.openai.com/v1"
         else:
             raise ValueError(f"Unsupported provider: {config.PROVIDER}")
+        
+        if config.SEARCH_PROVIDER.lower() == "searxng":
+            self.searxng_tool = SearXNGTool(config.SEARXNG_HOST) 
+            web_tool = self.searxng_tool.get_tool()
+            print(f"DEBUG: Web Search initialized using SearXNG at {config.SEARXNG_HOST}")
+        else:
+            self.search_engine = SerperSearchTool(config.SERPER_API_KEY)
+            web_tool = self.search_engine.get_web_tool()
+            print(f"DEBUG: Web Search initialized using Serper API")
 
         self.llm_params = {
             "openai_api_key": config.API_KEY,
@@ -38,6 +49,8 @@ class LLMService:
             "model_name": config.MODEL,
             "temperature": 0.7
         }
+
+        self.llm = ChatOpenAI(**self.llm_params, http_client=custom_client)
 
         self.vision_llm = ChatOpenAI(
             openai_api_key = config.API_KEY,
@@ -59,7 +72,7 @@ class LLMService:
         self.base_tools = [
         get_current_date,
         get_current_time,            
-        self.serper_web_search_tool.get_web_tool(),
+        web_tool, # This will now be EITHER SearXNG or Serper
         self.comfy_image_tool.get_tool(),
         self.music_generation_tool.get_tool(),
         self.python_tool.get_tool(),
@@ -84,9 +97,11 @@ class LLMService:
                     f"{image_description}\n\n"
                     f"User's question: {prompt}"
                 )
+                #print(f"[Debug Proxy Vision] Using model for vision: {self.config.VISION_MODEL} in mode {self.config.VISION_MODE}")
                 # Main Vision Mode
             else:
                 pass_images_to_agent = images
+                #print(f"[Debug Main Vision] Using model for vision: {self.config.VISION_MODEL} in mode {self.config.VISION_MODE}")
 
         # Run the agent
         response = self._run_agent(
@@ -117,15 +132,13 @@ class LLMService:
         return vision_response.content
 
     def _run_agent(self, conversation_id, prompt, images_present=False, raw_images=None):
-        # Selection logic
+    # Selection logic
         if raw_images and self.config.VISION_MODE == "main_vision":
             llm = self.vision_llm
         else:
             llm = ChatOpenAI(**self.llm_params)
 
         # Aggressive Tool Filtering
-        # If an image is present, REMOVE the image generation and memory tools 
-        # that might confuse a smaller model into "searching" for the image.
         memory_tool = MemoryTool(self.memory_service, conversation_id)
         active_tools = self.base_tools + memory_tool.get_tools()
 
@@ -135,9 +148,12 @@ class LLMService:
 
         safe_prompt = prompt if (prompt and prompt.strip()) else "Describe this image in detail."
 
-        # Construct working payload
+    # Construct working payload
         if raw_images and self.config.VISION_MODE == "main_vision":
-            content = [{"type": "text", "text": f"SYSTEM: You are currently looking at an image. Answer the user's question based ONLY on what you see.\nUSER: {safe_prompt}"}]
+            content = [{
+                "type": "text",
+                "text": f"SYSTEM: You are currently looking at an image. Answer the user's question based ONLY on what you see.\nUSER: {safe_prompt}"
+            }]
             for img in raw_images:
                 content.append({
                     "type": "image_url",
@@ -147,25 +163,26 @@ class LLMService:
         else:
             agent_input_message = [HumanMessage(content=safe_prompt)]
 
-        #  Simplified prompt for Vision to prevent "Tool Hallucination"
+        # Prompt
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", self.config.SYSTEM_MESSAGE),
-            MessagesPlaceholder(variable_name = "history"),
-            MessagesPlaceholder(variable_name = "input"),
-            MessagesPlaceholder(variable_name = "agent_scratchpad"),
+            MessagesPlaceholder(variable_name="history"),
+            MessagesPlaceholder(variable_name="input"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
 
         agent = create_tool_calling_agent(llm, active_tools, chat_prompt)
+
         agent_executor = AgentExecutor(
-            agent = agent,
-            tools = active_tools,
-            verbose = True,
+            agent=agent,
+            tools=active_tools,
+            verbose=True,
             handle_parsing_errors=True,
-            max_iterations = 4
+            max_iterations=4
         )
 
         history = self.history_db.get(conversation_id, [])
-        
+
         try:
             result = agent_executor.invoke({
                 "input": agent_input_message,
@@ -178,12 +195,19 @@ class LLMService:
 
         if self.config.SHOW_THINKING == False:
             response = self._strip_thinking(response)
-        # Save only text to history
+
+        # History Management
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
-        
+
+        # Save messages
         self.history_db[conversation_id].append(HumanMessage(content=safe_prompt))
         self.history_db[conversation_id].append(AIMessage(content=response))
+
+        max_messages = int(self.config.SHORT_MEMORY) * 2
+
+        if len(self.history_db[conversation_id]) > max_messages:
+            self.history_db[conversation_id] = self.history_db[conversation_id][-max_messages:]
 
         return response
     
@@ -198,3 +222,32 @@ class LLMService:
         # DeepSeek <thought> and </thought>
         text = re.sub(r"\[thought\][\s\S]*?\[/thought\]", "", text,)
         return text.strip()
+    
+    def quick_query(self, prompt: str) -> str:
+        """This is the missing piece for your Decision Agent!"""
+        try:
+            # We use temperature 0 for strict decisions
+            response = self.llm.invoke(prompt, temperature=0)
+            return response.content if hasattr(response, 'content') else str(response)
+        except Exception as e:
+            print(f"LLM Quick Query Error: {e}")
+            return "no"
+        
+    def get_latest_search_info(self):
+        """Returns a tuple of (provider_name, links_list)"""
+        links = []
+
+        # Check SearXNG
+        if hasattr(self, "searxng_tool") and self.searxng_tool.latest_links:
+            links.extend(self.searxng_tool.latest_links)
+            self.searxng_tool.latest_links = [] # Clear links to not appear in next message
+            return "SearXNG", links
+
+        # Check Serper
+        if hasattr(self, 'search_engine') and self.search_engine.latest_links:
+            links = list(self.search_engine.latest_links)
+            self.search_engine.latest_links = [] # Clear
+            return "Serper", links
+
+
+        return None, []

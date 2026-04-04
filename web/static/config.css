@@ -243,7 +243,7 @@ select:focus {
 }
 
 input:checked + .slider {
-    background-color: #1b6ec2; /* Matches your blue theme */
+    background-color: #1b6ec2;
 }
 
 input:checked + .slider:before {
