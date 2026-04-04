@@ -4,9 +4,7 @@
 ![Slack](https://img.shields.io/badge/Slack-4A154B?style=flat&logo=slack&logoColor=white)
 
 LocalAISlackBot is a local AI powered Slack bot built with Python.
-It integrates local LLMs via Ollama/LM Studio/Cloud, web search, vision, file analysis,
-image generation, music generation, and Python execution directly
-inside your Slack workspace.
+It integrates local LLMs via Ollama/LM Studio/Cloud, web search (Serper or SearXNG), vision, file analysis, image generation, music generation, and Python execution directlyinside your Slack workspace.
 
 ## ✨ Features
 **What can this local AI do in Slack?**
@@ -16,7 +14,7 @@ inside your Slack workspace.
 * 📄 **File Analysis:** Upload **PDF, TXT, or DOCX** files, and the bot will read and answer questions based on them.
 * 👁️ **Vision:** Upload images and ask the bot to describe or analyze them (requires a Vision model).
 * 🕒 **Local Time and Date** Retrieve current system time and date.
-* 🌐 **Web Search:** The bot can search the internet for the latest news and real-time information (requires Serper web api key).
+* 🌐 **Web Search:** The bot can search the internet using either **Serper API** (Cloud) or **SearXNG** (Local/Self-hosted).
 * 🎨 **Image Generation:** The bot can generate images locally using **ComfyUI** (requires installed ComfyUI).
 * 🎵 **Music Generation:** Create original audio and music (requires separate Music Gen Python program running).
 * 🐍 **Python Execution:** Write and execute Python code snippets (requires separate Python Execution environment/program running).
@@ -36,30 +34,12 @@ inside your Slack workspace.
 
 1 Create the Slack App
 
-1. Go to the Slack API Dashboard
-https://api.slack.com/apps
+1.Go to the [Slack API Dashboard](https://api.slack.com/apps).
 2. Click Create New App
 3. Choose From Scratch
 4. Enter your app name (example: AI-Bot)
 5. Select your workspace
 
-Configure Bot Token Scopes
-
-Go to
-OAuth & Permissions → Bot Token Scopes
-
-Add the following scopes:
-Scope	Description
-app_mentions:read	View messages that mention @AI-Bot
-assistant:write	Allow AI-Bot to act as an App Agent
-channels:history	View messages in public channels
-chat:write	Send messages as AI-Bot
-commands	Enable slash commands
-files:read	View files shared in conversations
-files:write	Upload and manage files
-groups:history	View messages in private channels
-im:history	View direct messages
-users:read	View users in workspace
 
 2 Configure Bot Token Scopes
 
@@ -163,10 +143,8 @@ You can even run the model on another PC inside the same router network.
 
 
 ### Option A - Ollama Setup
-1. Download and install Ollama
-  https://ollama.com/
-
-2. Start the server:
+1. Download and install [Ollama](https://ollama.com/download).
+2. Start the server in the terminal:
 ```
 ollama serve
 ```
@@ -182,7 +160,7 @@ Replace 192.168.X.X with the IP of the PC running Ollama.
 
 Download a Model
 
-Example recommended lightweight model:
+Example recommended lightweight model in the terminal:
 ```
 ollama pull qwen3:4b
 ```
@@ -196,9 +174,7 @@ Copy the exact model name into your bot configuration.
 
 ### Option B - LM Studio Setup
 
-1. Download LM Studio
- https://lmstudio.ai/
-
+1. Download [LM Studio](https://lmstudio.ai/).
 2. Download a model inside LM Studio
 Example:
 * Qwen 3 4B Instruct
@@ -215,18 +191,64 @@ http://localhost:1234/v1
 Place this endpoint and model name inside your configuration.
 
 
-## 🌐 3. Web Search - Optional
+## 🌐 3. Web Search Setup (Options)
 
-To enable internet search capability:
+You can choose between a Cloud-based API (Serper) or a Local, privacy-focused engine (SearXNG).
 
-1. Get API key from:
- https://serper.dev
+Option A: Serper API (Cloud)
+1. Get an API key from [Serper.dev](https://serper.dev).
+2. In the bot's Web Configuration:
+   - Set SEARCH_PROVIDER to: serper
+   - Paste your Serper API Key into the designated field.
 
-2. Add the API key to your configuration.
-This enables:
-* Live web results
-* News lookup
-* Research assistance
+Option B: SearXNG (Local / Privacy)
+SearXNG is a free, self-hosted metasearch engine that aggregates results from multiple sources without tracking you.
+
+1. Install Docker (If not already installed)
+   Before running SearXNG, you must have Docker Desktop or Docker Engine installed:
+   [Windows/Linux](https://www.docker.com/products/docker-desktop/). 
+
+2. Download and Run SearXNG via Terminal
+   Open your terminal (Command Prompt, PowerShell, or Bash) and run the following commands:
+
+   Step A: Pull the latest image
+   ```
+   docker pull searxng/searxng
+   ```
+   Step B: Run the container
+   Note: ${PWD} represents your current directory. 
+  - If using PowerShell or Bash: use "${PWD}/searxng"
+  - If using Windows Command Prompt (CMD): replace ${PWD} with %cd%
+   ```
+   docker run -d \
+     -p 8080:8080 \
+     -v "${PWD}/searxng:/etc/searxng" \
+     --name searxng_container \
+     searxng/searxng
+   ```
+3. Locate and Edit settings.yml
+The command in Step B creates a folder named 'searxng' inside the directory where you ran the command.
+- Go to the folder: [Your Project Path]/searxng/
+- Open 'settings.yml' with a text editor (Notepad, VS Code, etc.).
+
+*Note: If the file does not exist or is empty, create/edit it to include the settings below.*
+
+4. Important Configuration (Enable JSON)
+For the AI to read search results, the "json" format must be enabled. 
+Inside 'settings.yml', ensure the following lines exist (add them if they are missing):
+
+use_default_settings: true<br>
+search:<br>
+  formats:<br>
+    - html<br>
+    - json<br>
+
+5. Bot Configuration
+In the bot's Web Configuration:
+- Set SEARCH_PROVIDER to: searxng
+- Set SEARXNG_HOST to: http://localhost:8080 (or your server's local IP)
+
+⚠️ CRITICAL: The Docker SearXNG container MUST be running in the background for the AI to access the web. If the container is stopped, the bot will return an error when attempting to perform a web search.
 
 
 ## 🎨 4. ComfyUI - Image Generation (Optional)
@@ -241,8 +263,7 @@ LocalAISlackBot/comfy resources/lumina-2-text2img-comfyui-wiki.com.json
 You will find a .json workflow file.
 Setup Steps
 
-1. Install ComfyUI
-https://www.comfy.org/download
+1. Install [ComfyUI](https://www.comfy.org/download).
 2. Start ComfyUI.
 3. Drag and drop the provided .json workflow file into the ComfyUI interface.
 4. ComfyUI will automatically show which models are missing.
@@ -296,43 +317,7 @@ Sandboxed Python execution API
 ** stderr
 ** execution result
 
-This keeps the main Slack bot secure and isolated.
----
-Architecture Overview 
-```
-                     ┌────────────────────┐
-                     │       Slack        │
-                     └─────────┬──────────┘
-                               │
-                       Socket Mode (WS)
-                               │
-                     ┌─────────▼──────────┐
-                     │  Slack Bolt App    │
-                     │     Python Core    │
-                     └─────────┬──────────┘
-                               │
-                     ┌─────────▼──────────┐
-                     │    Agent Layer     │
-                     │ Tool Orchestrator  │
-                     └─────────┬──────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-┌───────▼────────┐   ┌────────▼────────┐   ┌─────────▼────────┐
-│ Ollama /       │   │   ComfyUI       │   │ Music Generator  │
-│ LM Studio      │   │ Image Server    │   │ Python API       │
-│ Local LLM      │   │ Dev Mode On     │   │ Returns .wav     │
-└────────────────┘   └─────────────────┘   └──────────────────┘
-                               │
-                     ┌─────────▼──────────┐
-                     │ Python Exec Server │
-                     │ Sandboxed API      │
-                     │ Returns stdout     │
-                     └────────────────────┘
 
-                     + Local Time / Date Tool
-```
----
 🎮 Slash Commands
 In Slack Channels (Group Chat)
 | Commands | Description |
@@ -368,7 +353,10 @@ In Direct Messages (Private Chat)
 **File Analysis & Web Search**
 <p float="left">
    <img src="https://github.com/user-attachments/assets/f1ce5096-2ded-4085-b62c-e10f0d7fe493" width="30%" />
-   <img src="https://github.com/user-attachments/assets/b3c2aec3-7b6a-4595-952d-ec0198f5a05d" width="30%" />
+  <img src="https://github.com/user-attachments/assets/711e766d-09a8-4897-bb2a-12fe699fc73c" width="30%" />
+  <img src="https://github.com/user-attachments/assets/1525db8c-d6d5-48b6-86eb-36ffa6096213" width="30%" />
+
+
 </p>
 
 **Image Generation & Music Generation**
