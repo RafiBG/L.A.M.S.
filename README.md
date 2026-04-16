@@ -337,11 +337,13 @@ In Direct Messages (Private Chat)
 <p float="left">
  <img src="https://github.com/user-attachments/assets/38a539fe-c788-4968-91a8-ce5e9a2c987a" width="30%" />
  <img src="https://github.com/user-attachments/assets/4fa8cb34-0e2a-4282-acf7-78d589bb0a3a" width="30%" />
+ <img alt="Web Search Options Config Light" src="https://github.com/user-attachments/assets/64ab5e67-3255-400e-92ca-32c31da6fe22" width="30%" />
 </p>
 
 <p float="left">
   <img src="https://github.com/user-attachments/assets/d7b99887-6f05-45ef-8ea2-8e66d49b570c" width="30%" />
   <img src="https://github.com/user-attachments/assets/51e89cd7-b7c0-4b11-933c-380f53111987" width="30%" />
+  <img alt="Web Search Options Config Dark" src="https://github.com/user-attachments/assets/04040450-ce28-41ee-8208-25d563cd45d0" width="30%" />
 </p>
 
 **Chat & Vision Capabilities**
