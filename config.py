@@ -34,6 +34,8 @@ class Config:
         self.SHOW_THINKING = os.getenv("SHOW_THINKING", "false").lower() == "true"
         self.SEARCH_PROVIDER = os.getenv("SEARCH_PROVIDER", "serper") # "serper" or "searXNG"
         self.SEARXNG_HOST = os.getenv("SEARXNG_HOST", "http://localhost:8080")
+        self.SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "3") # Default to 3 results for web search if not set
+        self.SEARXNG_ENGINES = os.getenv("SEARXNG_ENGINES", "google,brave,duckduckgo,bing") # Default engines for SearXNG if not set
 
 
     def _get_required(self, name: str) -> str:

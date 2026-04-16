@@ -24,7 +24,7 @@
 
     <form method="post" action="/config">
 
-        <details class="config-section" open>
+        <details class="config-section">
             <summary class="summary-size">Authentication & API Keys</summary>
             
             <label for="bot_token">Bot Token</label>
@@ -64,14 +64,24 @@
 
         <details class="config-section">
             <summary class="summary-size">Model & Provider Settings</summary>
-
+        
             <label for="provider">LLM Provider</label>
             <small class="helper-text">Choose the platform hosting your AI model</small>
-            <select id="provider" name="provider">
-                <option value="ollama" {% if provider == "ollama" %}selected{% endif %}>Ollama (Local)</option>
-                <option value="lmstudio" {% if provider == "lmstudio" %}selected{% endif %}>LM Studio (Local)</option>
-                <option value="openai" {% if provider == "openai" %}selected{% endif %}>OpenAI Cloud</option>
-            </select>
+            <div class="filter-switch three-way">
+                <input id="prov_ollama" type="radio" name="provider" value="ollama" {% if provider=="ollama" %}checked{% endif
+                    %}>
+                <label for="prov_ollama">Ollama</label>
+        
+                <input id="prov_lmstudio" type="radio" name="provider" value="lmstudio" {% if provider=="lmstudio" %}checked{%
+                    endif %}>
+                <label for="prov_lmstudio">LM Studio</label>
+        
+                <input id="prov_openai" type="radio" name="provider" value="openai" {% if provider=="openai" %}checked{% endif
+                    %}>
+                <label for="prov_openai">Cloud</label>
+        
+                <div class="background"></div>
+            </div>
 
             <label for="model">Main Model Name</label>
             <small class="helper-text">Exact model string (e.g., 'llama3.1', 'gpt-4o', or 'deepseek-v3')</small>
@@ -82,7 +92,7 @@
             <input type="text" name="ollama_host" value="{{ ollama_host }}">
 
             <label for="lm_studio_host">LM Studio Host</label>
-            <small class="helper-text">Standard:http://127.0.0.1:1234/v1 or http://localhost:1234/v1</small>
+            <small class="helper-text">Standard: http://127.0.0.1:1234/v1 or http://localhost:1234/v1</small>
             <input type="text" name="lm_studio_host" value="{{ lm_studio_host }}">
 
             <label for="open_ai_host">Cloud Host URL</label>
@@ -98,18 +108,25 @@
             <textarea name="system_message" rows="6">{{ system_message }}</textarea>
 
             <label for="show_thinking">Reasoning Process</label>
-            <small class="helper-text">For DeepSeek, Qwen and other models: do you want to see the 'hidden' thoughts ?</small>
-            <select id="show_thinking" name="show_thinking">
-                <option value="true" {% if show_thinking == "true" %}selected{% endif %}>Show</option>
-                <option value="false" {% if show_thinking == "false" %}selected{% endif %}>Hide</option>
-            </select>
+            <small class="helper-text">For DeepSeek, Qwen and others: show 'hidden' thoughts?</small>
+            <div class="filter-switch">
+                <input id="thinking_show" type="radio" name="show_thinking" value="true" {% if show_thinking=="true" %}checked{%
+                    endif %}>
+                <label for="thinking_show">Show</label>
+            
+                <input id="thinking_hide" type="radio" name="show_thinking" value="false" {% if show_thinking=="false" %}checked{%
+                    endif %}>
+                <label for="thinking_hide">Hide</label>
+            
+                <div class="background"></div>
+            </div>
 
             <label for="short_memory">Short Memory (Messages count)</label>
             <small class="helper-text">Number of recent messages to keep in active context</small>
-            <input type="number" name="short_memory" value="{{ short_memory }}">
+            <input class="input-small" type="number" name="short_memory" value="{{ short_memory }}">
 
             <label for="allowed_channels">Allowed Group Channels IDs</label>
-            <small class="helper-text">Comma-separated list (e.g., C12345, C67890)</small>
+            <small class="helper-text">Comma-separated list (e.g., C12345, C67890) for specific channels. To response in every channel leave it empty</small>
             <input type="text" name="allowed_channels" value="{{ allowed_channels }}">
             
             <label for="embedding_model">Embedding Model</label>
@@ -121,12 +138,23 @@
             <summary class="summary-size">Web Search Settings</summary>
     
             <label for="search_provider">Search Engine Provider</label>
-            <small class="helper-text">Serper is Cloud-based (requires API Key) | SearXNG is Local (Docker)</small>
-            <select id="search_provider" name="search_provider">
-                <option value="serper" {% if search_provider == "serper" %}selected{% endif %}>Serper.dev (Cloud)</option>
-                <option value="searxng" {% if search_provider == "searxng" %}selected{% endif %}>SearXNG (Local Docker)</option>
-            </select>
-
+            <small class="helper-text">Serper (Cloud) | SearXNG (Local)</small>
+            <div class="filter-switch">
+                <input id="provider_serper" type="radio" name="search_provider" value="serper" {% if search_provider=="serper"
+                    %}checked{% endif %}>
+                <label for="provider_serper">Serper</label>
+            
+                <input id="provider_searxng" type="radio" name="search_provider" value="searxng" {% if search_provider=="searxng"
+                    %}checked{% endif %}>
+                <label for="provider_searxng">SearXNG</label>
+                <div class="background"></div>
+            </div>
+            
+            <label for="search_limit">Search Results Limit</label>
+            <small class="helper-text">How many websites the AI should look at (Example: 3 for speed, 10 for deep research)</small>
+            <input class="input-small" type="number" id="search_limit" name="search_limit" value="{{ search_limit or 5 }}" min="2"
+                max="50">
+            
             <label for="web_key">Serper API Key</label>
             <small class="helper-text">Required only if using Serper.dev</small>
             <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
@@ -137,21 +165,74 @@
                 </label>
                 <span class="toggle-text">Show Serper Key</span>
             </div>
-
-            <label for="searxng_host">SearXNG Host URL</label>
+            
             <small class="helper-text">Standard Docker address (e.g., http://localhost:8080)</small>
-            <input type="text" name="searxng_host" value="{{ searxng_host }}">
-        </details>
+            <input type="text" id="searxng_host" name="searxng_host" value="{{ searxng_host }}">
+            
+            <div class="engine-grid">
+                <div class="engine-toggle">
+                    <span>Google</span>
+                    <div class="checkbox-wrapper-6">
+                        <input class="tgl tgl-light" id="engine-google" type="checkbox" name="searxng_engines" value="google" {%
+                            if 'google' in searxng_engines %}checked{% endif %} />
+                        <label class="tgl-btn" for="engine-google"></label>
+                    </div>
+                </div>
+            
+                <div class="engine-toggle">
+                    <span>Brave</span>
+                    <div class="checkbox-wrapper-6">
+                        <input class="tgl tgl-light" id="engine-brave" type="checkbox" name="searxng_engines" value="brave" {%
+                            if 'brave' in searxng_engines %}checked{% endif %} />
+                        <label class="tgl-btn" for="engine-brave"></label>
+                    </div>
+                </div>
+            
+                <div class="engine-toggle">
+                    <span>DuckDuckGo</span>
+                    <div class="checkbox-wrapper-6">
+                        <input class="tgl tgl-light" id="engine-ddg" type="checkbox" name="searxng_engines" value="duckduckgo" {%
+                            if 'duckduckgo' in searxng_engines %}checked{% endif %} />
+                        <label class="tgl-btn" for="engine-ddg"></label>
+                    </div>
+                </div>
+            
+                <div class="engine-toggle">
+                    <span>Bing</span>
+                    <div class="checkbox-wrapper-6">
+                        <input class="tgl tgl-light" id="engine-bing" type="checkbox" name="searxng_engines" value="bing" {%
+                            if 'bing' in searxng_engines %}checked{% endif %} />
+                        <label class="tgl-btn" for="engine-bing"></label>
+                    </div>
+                </div>
+            
+                <div class="engine-toggle">
+                    <span>Yahoo</span>
+                    <div class="checkbox-wrapper-6">
+                        <input class="tgl tgl-light" id="engine-yahoo" type="checkbox" name="searxng_engines" value="yahoo" {%
+                            if 'yahoo' in searxng_engines %}checked{% endif %} />
+                        <label class="tgl-btn" for="engine-yahoo"></label>
+                    </div>
+                </div>
+            </div>
+            </details>
 
         <details class="config-section">
             <summary class="summary-size">Vision Settings</summary>
 
             <label for="vision_mode">Vision Mode</label>
-            <small class="helper-text">Main: Model has vision built-in | Proxy: Use a second model for eyes</small>
-            <select id="vision_mode" name="vision_mode">
-                <option value="main_vision" {% if vision_mode == "main_vision" %}selected{% endif %}>Main Model Vision</option>
-                <option value="proxy_vision" {% if vision_mode == "proxy_vision" %}selected{% endif %}>Separate Proxy Vision Model</option>
-            </select>
+            <small class="helper-text">Main: Built-in | Proxy: Second model for eyes</small>
+            <div class="filter-switch">
+                <input id="vis_main" type="radio" name="vision_mode" value="main_vision" {% if vision_mode=="main_vision"
+                    %}checked{% endif %}>
+                <label for="vis_main">Main Model</label>
+            
+                <input id="vis_proxy" type="radio" name="vision_mode" value="proxy_vision" {% if vision_mode=="proxy_vision"
+                    %}checked{% endif %}>
+                <label for="vis_proxy">Proxy Model</label>
+            
+                <div class="background"></div>
+            </div>
 
             <label for="vision_model">Proxy Vision Model Name</label>
             <small class="helper-text">Model used for image analysis (e.g., 'llava' or 'moondream')</small>
@@ -169,6 +250,11 @@
             <small class="helper-text">Absolute local path where images are saved</small>
             <input type="text" name="comfy_image_path" value="{{ comfy_image_path }}">
 
+            <label>Image Dimensions & Sampling</label>
+            <small class="helper-text">
+                Recommended: 512x512 or 1024x1024 for balance of quality and performance.
+                Higher values require significantly more VRAM.
+            </small>
             <div style="display: flex; gap: 15px;">
                 <div style="flex: 1; width:100%; padding:8px;">
                     <label>Width</label>
@@ -181,6 +267,7 @@
                 <div style="flex: 2; width:100%; padding:8px;">
                     <label>Steps</label>
                     <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
+                    <small class="helper-text">Optimal: 20-25. >30 increases load with diminishing returns.</small>
                 </div>
             </div>
 

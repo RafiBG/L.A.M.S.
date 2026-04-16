@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from services.env_service import EnvService
+from typing import List
 
 app = FastAPI()
 env_service = EnvService()
@@ -76,7 +77,9 @@ async def config_page(request: Request):
             "provider": env_data.get("PROVIDER"),
             "show_thinking": env_data.get("SHOW_THINKING"),
             "search_provider": env_data.get("SEARCH_PROVIDER"),
-            "searxng_host": env_data.get("SEARXNG_HOST", "http://localhost:8080")
+            "searxng_host": env_data.get("SEARXNG_HOST", "http://localhost:8080"),
+            "search_limit": env_data.get("SEARCH_LIMIT"),
+            "searxng_engines": env_data.get("SEARXNG_ENGINES"),
         },
     )
 
@@ -107,9 +110,13 @@ async def save_config(
     show_thinking: str = Form(...),
     search_provider: str = Form(...),
     searxng_host: str = Form(...),
+    search_limit: str = Form(...),
+    searxng_engines: List[str] = Form([]),
     
     
 ):
+    engines_str = ",".join(searxng_engines) if searxng_engines else "google"
+    
     updates = {
         "BOT_TOKEN": bot_token,
         "APP_TOKEN": app_token,
@@ -135,6 +142,8 @@ async def save_config(
         "SHOW_THINKING": show_thinking,
         "SEARCH_PROVIDER": search_provider,
         "SEARXNG_HOST": searxng_host,
+        "SEARCH_LIMIT": search_limit,
+        "SEARXNG_ENGINES": engines_str,
     }
 
     env_service.write_selected(updates)

@@ -100,12 +100,9 @@ class GroupChatHandler:
         if search_links:
             attachments.append({
                 "color": "#36a64f",
-                "title": f"🔗 Research Sources (via {provider})",
+                "title": f"🌐 Research Sources (via {provider})",
                 "text": "\n".join([f"• {link}" for link in search_links])
             })
-
-            # Clear after fetching so they don't appear in the next message
-            #self.llm_service.get_latest_search_links = []
 
         # Final UI Update
         # Ensures that even if final_text is weirdly empty, the "Thinking" text is replaced
