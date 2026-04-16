@@ -3,10 +3,11 @@ body {
     background-image: url("images/white-back.jpg");
     background-size: cover;
     background-position: center;
-    background-attachment: fixed; /* Keeps bg still while scrolling */
-    
+    background-attachment: fixed;
+    /* Keeps bg still while scrolling */
+
     /* Fallback color if image is missing */
-    background-color: #f4f6f9; 
+    background-color: #f4f6f9;
     color: #212529;
     margin: 0;
 }
@@ -161,28 +162,28 @@ hr {
 
 /* Select options */
 select {
-  appearance: none;
-  width: 180px;
-  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  color: #71717a;
-  background-color: transparent;
-  margin: 0px 0px 16px;
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  font-family: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none;
+    width: 180px;
+    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+    color: #71717a;
+    background-color: transparent;
+    margin: 0px 0px 16px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 select:focus-visible {
-  outline: none;
-  border-color: #a1a1aa;
-  box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.3);
+    outline: none;
+    border-color: #a1a1aa;
+    box-shadow: 0 0 0 2px rgba(161, 161, 170, 0.3);
 }
 
 select:focus {
-  color: #18181b;
+    color: #18181b;
 }
 
 .summary-size {
@@ -224,7 +225,10 @@ select:focus {
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: #ccc;
     transition: .4s;
     border-radius: 34px;
@@ -242,14 +246,15 @@ select:focus {
     border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
     background-color: #1b6ec2;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
     transform: translateX(14px);
 }
- /* For the small helper text */
+
+/* For the small helper text */
 .helper-text {
     display: block;
     font-size: 0.8rem;
@@ -273,9 +278,143 @@ input:checked + .slider:before {
     width: 100% !important;
 }
 
-@media (prefers-color-scheme: dark) {
-    .toggle-text { color: #aaa; }
-    .slider { background-color: #444; }
+/* Checkbox style for search engines */
+.engine-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.engine-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.04);
+    font-weight: 500;
+}
+
+.checkbox-wrapper-6 .tgl {
+    display: none;
+}
+
+.checkbox-wrapper-6 .tgl,
+.checkbox-wrapper-6 .tgl:after,
+.checkbox-wrapper-6 .tgl:before,
+.checkbox-wrapper-6 .tgl+.tgl-btn {
+    box-sizing: border-box;
+}
+
+.checkbox-wrapper-6 .tgl+.tgl-btn {
+    outline: 0;
+    display: block;
+    width: 46px;
+    height: 24px;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-wrapper-6 .tgl+.tgl-btn:after {
+    position: absolute;
+    content: "";
+    width: 20px;
+    height: 20px;
+    left: 2px;
+    top: 2px;
+    border-radius: 50%;
+    background: #fff;
+    transition: all 0.25s ease;
+}
+
+.checkbox-wrapper-6 .tgl-light+.tgl-btn {
+    background: #d1d5db;
+    border-radius: 999px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-wrapper-6 .tgl-light:checked+.tgl-btn {
+    background: #1b6ec2;
+}
+
+.checkbox-wrapper-6 .tgl:checked+.tgl-btn:after {
+    left: 24px;
+}
+
+.filter-switch {
+    box-sizing: border-box;
+    border: 2px solid #1b6ec2;
+    border-radius: 80px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 50px;
+    width: 100%;
+    max-width: 260px;
+    /* Increased to fit text comfortably */
+    overflow: hidden;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.filter-switch input {
+    display: none;
+}
+
+.filter-switch label {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    z-index: 2;
+    transition: all 0.4s;
+    font-weight: 500;
+    font-size: 15px;
+    color: #7d7d7d;
+    line-height: 45px;
+}
+
+.filter-switch .background {
+    position: absolute;
+    height: 37px;
+    background-color: #1b6ec2;
+    top: 4px;
+    border-radius: 30px;
+    transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1;
+}
+
+/* 2-Option Logic (Default) */
+.filter-switch:not(.three-way) .background {
+    width: calc(50% - 8px);
+    left: 4px;
+}
+
+.filter-switch:not(.three-way) input:nth-of-type(2):checked~.background {
+    left: calc(50% + 4px);
+}
+
+/* 3-Option Logic (LLM Provider) */
+.filter-switch.three-way .background {
+    width: calc(33.33% - 6px);
+}
+
+.filter-switch.three-way input:nth-of-type(1):checked~.background {
+    left: 4px;
+}
+
+.filter-switch.three-way input:nth-of-type(2):checked~.background {
+    left: calc(33.33% + 2px);
+}
+
+.filter-switch.three-way input:nth-of-type(3):checked~.background {
+    left: calc(66.66% + 2px);
+}
+
+.filter-switch input:checked+label {
+    color: #ffffff !important;
+    font-weight: bold;
 }
 
 /* Detects if user OS is in dark mode*/
@@ -345,15 +484,66 @@ input:checked + .slider:before {
     }
 
     form button {
-    background-color: #204b76;
+        background-color: #204b76;
     }
 
     .container {
-    box-shadow: 0 6px 18px #96969666;
-    transition: box-shadow 0.2s ease;
+        box-shadow: 0 6px 18px #96969666;
+        transition: box-shadow 0.2s ease;
     }
 
-.container:hover {
-    box-shadow: 0 8px 24px #6a6a6a66;
+    .container:hover {
+        box-shadow: 0 8px 24px #6a6a6a66;
+    }
+
+    .toggle-text {
+        color: #aaa;
+    }
+
+    .input-small {
+        width: 80px !important;
+        display: inline-block;
+        padding: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+    }
+
+    .slider {
+        background-color: #444;
+    }
+
+    /* Dark Mode on the checkbox on search engines */
+    .engine-toggle {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .checkbox-wrapper-6 .tgl-light+.tgl-btn {
+        background: #444;
+    }
+
+    .checkbox-wrapper-6 .tgl-light:checked+.tgl-btn {
+        background: #4da3ff;
+    }
+
+    .input-small {
+        background-color: #2c2c2c;
+        color: #fff;
+        border: 1px solid #444;
+    }
+
+    /* Dark Mode swicher for Hide/Show, LLM provider, and Vision */
+    .filter-switch {
+        border-color: #4da3ff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .filter-switch .background {
+        background-color: #4da3ff;
+    }
+
+    .filter-switch input:not(:checked)+label {
+        color: #aaa;
     }
 }

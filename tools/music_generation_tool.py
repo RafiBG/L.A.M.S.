@@ -17,13 +17,13 @@ class MusicGenerationTool:
             Triggers the music engine to create an audio file (.wav). 
             Use this if the user wants a song, a beat, or any musical melody.
             'prompt' should be a description of the music style.
-            'duration' is in seconds (max 20).
+            'duration' is in seconds (max 30).
             """
             self.is_generating = True
             
             # Safety check on duration
-            if duration > 20:
-                duration = 20
+            if duration > 30:
+                duration = 30
             
             try:
                 target_url = f"{self.api_url}/generate"

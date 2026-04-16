@@ -80,11 +80,9 @@ class PrivateChatHandler:
         if search_links:
             attachments.append({
                 "color": "#36a64f",
-                "title": f"🔗 Research Sources (via {provider})",
+                "title": f"🌐 Research Sources (via {provider})",
                 "text": "\n".join([f"• {link}" for link in search_links])
             })
-            # Clear links after use so they don't appear in the next message
-            #self.llm_service.get_latest_search_links = []
 
         # Final update with attachments
         client.chat_update(
@@ -219,11 +217,37 @@ class PrivateChatHandler:
     def _handle_help_command(self, conv_id, thread_ts, client):
         """Sends a help menu to the user."""
         help_text = (
-            "*Assistant Commands:*\n"
-            "• `!forget` - Wipes my current memory of this chat.\n"
-            "• `!help` - Shows this menu.\n\n"
-            "_You can also upload PDFs, Images, or Word docs for me to analyze!_"
-        )
+        "🚀 *Welcome to your Local AI Assistant!* 🚀\n"
+        "I am a multi-functional bot running locally to ensure your data stays private.\n\n"
+        
+        "*🛠️ CORE COMMANDS*\n"
+        "• `!forget` - Wipes my current memory of this thread.\n"
+        "• `/clear_memory` - Wipes my current memory in group chat thread (This command must be set and can be used in group chats only).\n\n"
+        "• `!help`  - Shows this menu.\n\n"
+        
+        "*🌐 SMART TOOLS*\n"
+        "• *Web Search:* I can browse the internet (via SearXNG/Serper) for real-time info.\n"
+        "  _Example: \"What is the current stock price of NVIDIA?\"_\n"
+        "• *RAG Memory:* I can save specific facts to a private database for this channel.\n"
+        "  _Example: \"Remember for long time that our server password is 'Admin123'\"_\n"
+        "  _Example: \"Do you remmeber our server password?\"_\n"
+        "• *Python Runner:* I can write and execute Python code snippets.\n"
+        "  _Example: \"Calculate the Fibonacci sequence up to 100 using Python.\"_\n\n"
+        
+        "*📂 FILE & VISION ANALYSIS*\n"
+        "• *Documents:* Upload *PDF, TXT, or DOCX* for summaries or Q&A.\n"
+        "• *Vision:* Upload *images* to describe or analyze what's inside.\n\n"
+        
+        "*🎨 CREATIVE GENERATION*\n"
+        "• *Images:* I can generate art locally via *ComfyUI*.\n"
+        "  _Example: \"Generate an image of a cybernetic owl in a library.\"_\n"
+        "• *Music:* I can create original audio tracks.\n"
+        "  _Example: \"Create a 30-second futuristic synth-wave melody.\"_\n\n"
+        
+        "*🕒 UTILITY*\n"
+        "• Ask me for my current local time or date anytime.\n\n"
+        "💡 *Tip:* You don't need special commands for most tasks. Just talk to me naturally!"
+    )
         client.chat_postMessage(
             channel=conv_id,
             text=help_text,

@@ -3,8 +3,9 @@ import json
 from langchain_core.tools import tool
 
 class SerperSearchTool:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, search_limit: str):
         self.api_key = api_key
+        self.search_limit = int(search_limit)
         self.latest_links = []
 
     def get_web_tool(self):
@@ -21,7 +22,7 @@ class SerperSearchTool:
             }
             payload = json.dumps({"q": query})
             
-            print(f"\n[Tool] Serper search starting: {query}")
+            print(f"\n[Tool] Serper search starting: {query} with result limit {self.search_limit}")
             
             try:
                 response = requests.post(endpoint, headers=headers, data=payload)
@@ -32,7 +33,7 @@ class SerperSearchTool:
                 # Serper returns results in the 'organic' (or 'news') key
                 search_results = data.get("organic") or data.get("news") or []
                 
-                for item in search_results[:5]: # Take top 5
+                for item in search_results[:self.search_limit]: # Limit results based on config
                     title = item.get("title")
                     link = item.get("link")
                     snippet = item.get("snippet")

@@ -35,11 +35,11 @@ class LLMService:
             raise ValueError(f"Unsupported provider: {config.PROVIDER}")
         
         if config.SEARCH_PROVIDER.lower() == "searxng":
-            self.searxng_tool = SearXNGTool(config.SEARXNG_HOST) 
+            self.searxng_tool = SearXNGTool(config.SEARXNG_HOST, config.SEARCH_LIMIT, config.SEARXNG_ENGINES) 
             web_tool = self.searxng_tool.get_tool()
             print(f"DEBUG: Web Search initialized using SearXNG at {config.SEARXNG_HOST}")
         else:
-            self.search_engine = SerperSearchTool(config.SERPER_API_KEY)
+            self.search_engine = SerperSearchTool(config.SERPER_API_KEY, config.SEARCH_LIMIT)
             web_tool = self.search_engine.get_web_tool()
             print(f"DEBUG: Web Search initialized using Serper API")
 
@@ -61,7 +61,7 @@ class LLMService:
         )
 
         self.history_db = {} 
-        self.serper_web_search_tool = SerperSearchTool(config.SERPER_API_KEY)
+        self.serper_web_search_tool = SerperSearchTool(config.SERPER_API_KEY, config.SEARCH_LIMIT)
         self.comfy_image_tool = ComfyUIImageTool(config)
         self.music_generation_tool = MusicGenerationTool(config)
         self.python_tool = PythonExecutorTool(config)
