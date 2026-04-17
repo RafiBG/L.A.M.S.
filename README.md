@@ -1,9 +1,9 @@
-# LocalAISlackBot
+# L.A.M.S. (Local AI Multi-tool Slack)
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
 ![Slack](https://img.shields.io/badge/Slack-4A154B?style=flat&logo=slack&logoColor=white)
 
-LocalAISlackBot is a local AI powered Slack bot built with Python.
+L.A.M.S. is a local AI powered Slack bot built with Python.
 It integrates local LLMs via Ollama/LM Studio/Cloud, web search (Serper or SearXNG), vision, file analysis, image generation, music generation, and Python execution directlyinside your Slack workspace.
 
 ## ✨ Features
