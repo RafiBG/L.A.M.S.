@@ -74,17 +74,29 @@ You will need this in your configuration panel.
 Go to:
 Slash Commands → Create New Command
 
-Configure:
+Command 1:
+
+Configure:<br>
 Name:
 ```
 /clear_memory
 ```
-
 Description:
 ```
 Clears the conversation with the user that uses this command.
 ```
-Save the command.
+Command 2:<br>
+Name:
+```
+/help
+```
+Description:
+```
+Displays the multi-tool help menu and usage examples.
+```
+Save the command (You may need to Reinstall the App).<br>
+Note: If you add these commands after the bot is already installed, Slack will show a yellow banner at the top of your dashboard. You must click "reinstall your app" for the new commands to appear in your Slack workspace.
+
 
 4 Enable Socket Mode
 Go to:
@@ -323,6 +335,7 @@ In Slack Channels (Group Chat)
 | Commands | Description |
 | :--- | :--- |
 | `/clear_memory` |  Clears conversation memory for the entire channel |
+| `/help` | Displays the multi-tool help menu and usage examples. |
 
 🎮 Commands
 In Direct Messages (Private Chat)
