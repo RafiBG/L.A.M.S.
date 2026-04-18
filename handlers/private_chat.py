@@ -220,10 +220,13 @@ class PrivateChatHandler:
         "🚀 *Welcome to your Local AI Assistant!* 🚀\n"
         "I am a multi-functional bot running locally to ensure your data stays private.\n\n"
         
-        "*🛠️ CORE COMMANDS*\n"
+        "*🛠️ CORE COMMANDS IN PRIVATE CHAT*\n"
         "• `!forget` - Wipes my current memory of this thread.\n"
-        "• `/clear_memory` - Wipes my current memory in group chat thread (This command must be set and can be used in group chats only).\n\n"
         "• `!help`  - Shows this menu.\n\n"
+
+        "*🛠️ CORE COMMANDS IN GROUP CHATS*\n"
+        "• `/clear_memory` - Wipes my current memory in group chat thread (This command must be set and can be used in group chats only).\n\n"
+        "• `/help` - Shows this menu.\n\n"
         
         "*🌐 SMART TOOLS*\n"
         "• *Web Search:* I can browse the internet (via SearXNG/Serper) for real-time info.\n"
@@ -231,8 +234,8 @@ class PrivateChatHandler:
         "• *RAG Memory:* I can save specific facts to a private database for this channel.\n"
         "  _Example: \"Remember for long time that our server password is 'Admin123'\"_\n"
         "  _Example: \"Do you remmeber our server password?\"_\n"
-        "• *Python Runner:* I can write and execute Python code snippets.\n"
-        "  _Example: \"Calculate the Fibonacci sequence up to 100 using Python.\"_\n\n"
+        "• *Python Runner:* I can execute Python code snippets for math solving.\n"
+        "  _Example: \"12345 * 67890 = ?\"_\n\n"
         
         "*📂 FILE & VISION ANALYSIS*\n"
         "• *Documents:* Upload *PDF, TXT, or DOCX* for summaries or Q&A.\n"
@@ -246,6 +249,7 @@ class PrivateChatHandler:
         
         "*🕒 UTILITY*\n"
         "• Ask me for my current local time or date anytime.\n\n"
+        
         "💡 *Tip:* You don't need special commands for most tasks. Just talk to me naturally!"
     )
         client.chat_postMessage(

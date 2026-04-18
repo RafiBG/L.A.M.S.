@@ -6,7 +6,8 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from services.llm_service import LLMService
 from handlers.group_chat import GroupChatHandler
 from handlers.private_chat import PrivateChatHandler
-from handlers.slash_clear_memory import SlashClearMemoryHandler
+from Slash_Commands.slash_clear_memory import SlashClearMemoryHandler
+from Slash_Commands.slash_help import SlashHelpHandler
 
 class SlackBotService:
     def __init__(
@@ -27,6 +28,7 @@ class SlackBotService:
 
         # Slash Handlers
         self.slash_clear_handler = SlashClearMemoryHandler(llm_service)
+        self.slash_help_handler = SlashHelpHandler()
         
         self.handler: SocketModeHandler | None = None
         self._register_handlers()
@@ -59,6 +61,7 @@ class SlackBotService:
 
         # Register slash commands
         self.slash_clear_handler.register_commands(self.app)
+        self.slash_help_handler.register_commands(self.app)
 
     def run_sync(self) -> None:
         """Starts the bot synchronously. This blocks the thread it is called in."""
