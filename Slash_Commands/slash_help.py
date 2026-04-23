@@ -18,6 +18,7 @@ class SlashHelpHandler:
         help_text = (
             "🚀 *Welcome to your Local AI Assistant!* 🚀\n"
             "I am a multi-functional bot running locally to ensure your data stays private.\n\n"
+            "✨ *Repo:* <https://github.com/RafiBG/L.A.M.S.|View Source Code>\n\n"
             
             "*🛠️ CORE COMMANDS IN GROUP CHAT*\n"
             "• `/clear_memory` - Wipes my current memory in this channel.\n"
@@ -35,8 +36,8 @@ class SlashHelpHandler:
             "  _Example: \"12345 * 67890 = ?\"_\n\n"
             
             "*📂 FILE & VISION ANALYSIS*\n"
-            "• *Documents:* Upload *PDF, TXT, or DOCX* for analysis.\n"
-            "• *Vision:* Upload *images* to describe or analyze content.\n\n"
+            "• *Documents:* Upload *PDF, DOCX, TXT, MD, PY, JSON, or CSV* for analysis, summaries or Q&A.\n"
+            "• *Vision:* Upload **IMAGES** (*.PNG, .JPG, .JPEG*) to describe or analyze content.\n\n"            
             
             "*🎨 CREATIVE GENERATION*\n"
             "• *Images:* I can generate art locally via *ComfyUI*.\n"

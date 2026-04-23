@@ -15,7 +15,8 @@ class ComfyUIImageTool:
         self.height = int(getattr(config, "COMFYUI_IMAGE_HEIGHT", 1024) or 1024)
         self.steps = int(getattr(config, "COMFYUI_STEPS", 20) or 20)
         
-        self.is_generating = False 
+        self.is_generating = False
+        self.generation_failed = False
 
         print(f"DEBUG: ComfyUI Tool Loaded -> API: {self.api_url}, Dim: {self.width}x{self.height}, Steps: {self.steps}")
 
@@ -25,6 +26,7 @@ class ComfyUIImageTool:
             """Generate an image using the ComfyUI Lumina 2 workflow from a given text prompt. 
             It may take some time to finish."""
             self.is_generating = True
+            self.current_prompt_id = None
             
             try:
                 target_url = f"{self.api_url}/prompt"
@@ -101,11 +103,15 @@ class ComfyUIImageTool:
                     self.is_generating = False
                     print(f"[ComfyUI] Failed: {response.status_code} - {response.text}")
                     return f"ComfyUI error: {response.status_code}"
+                
+                data = response.json()
+                self.latest_prompt_id = data.get("prompt_id")
 
-                print("[ComfyUI] Image generation started successfully.")
+                print("[ComfyUI] Image generation started successfull.")
                 return "Image generation started successfully. I will post it here as soon as it is ready."
 
             except Exception as e:
+                self.generation_failed = True
                 self.is_generating = False
                 print(f"[ComfyUI] Error: {str(e)}")
                 return f"Error connecting to ComfyUI: {str(e)}"

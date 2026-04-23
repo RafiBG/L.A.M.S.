@@ -7,6 +7,7 @@ class MusicGenerationTool:
         # Target the Flask server we built earlier
         self.api_url = getattr(config, "MUSIC_API_URL", "http://127.0.0.1:5001").rstrip("/")
         self.is_generating = False 
+        self.generation_failed = False
 
         print(f"DEBUG: MusicGen Tool Loaded -> API: {self.api_url}")
 
@@ -52,7 +53,7 @@ class MusicGenerationTool:
                 )
 
             except Exception as e:
-                self.is_generating = False
+                self.generation_failed = True
                 print(f"[MusicTool] Error: {str(e)}")
                 return f"Error connecting to Music Engine: {str(e)}"
 

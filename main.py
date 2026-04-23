@@ -31,7 +31,7 @@ def main():
         browser_timer.daemon = True
         browser_timer.start()
 
-        print("--- Starting Server ---")
+        print("\n--- Starting Server ---")
         
         server_config = uvicorn.Config(
             app, 

@@ -31,7 +31,7 @@ class BotManager:
                 daemon=True,
             )
             self._thread.start()
-            print(f"\n{Fore.GREEN}Bot is online!{Fore.RESET}")
+            print(f"\n===============\n{Fore.GREEN}Bot is online!{Fore.RESET}\n===============")
             return "success"
 
         except Exception as e:
