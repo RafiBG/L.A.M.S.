@@ -3,6 +3,7 @@ import httpx, re
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain.callbacks.base import BaseCallbackHandler
 # Specific paths for version 0.3
 from langchain.agents import AgentExecutor
 from langchain.agents import create_tool_calling_agent
@@ -17,6 +18,16 @@ from tools.searxng_web_tool import SearXNGTool
 
 from services.memory_service import MemoryService
 from config import Config
+
+class SlackStreamingHandler(BaseCallbackHandler):
+    def __init__(self, callback_fn):
+        self.callback_fn = callback_fn
+        self.full_content = ""
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.full_content += token
+        # Trigger the Slack update for every new token
+        self.callback_fn(self.full_content, is_final=False)
 
 class LLMService:
     def __init__(self, config: Config) -> None:
@@ -68,6 +79,12 @@ class LLMService:
 
         self.memory_service = MemoryService(config)
         
+        # Store these as attributes so the flags persist!
+        self.memory_tool = MemoryTool(self.memory_service, "default")
+        self.python_tool = PythonExecutorTool(config)
+        self.comfy_image_tool = ComfyUIImageTool(config)
+        self.music_generation_tool = MusicGenerationTool(config)
+
         # Base tools list static
         self.base_tools = [
         get_current_date,
@@ -77,7 +94,7 @@ class LLMService:
         self.music_generation_tool.get_tool(),
         self.python_tool.get_tool(),
 ]
-
+    
     def generate_reply(self, conversation_id: str, prompt: str, images = None) -> str:
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
@@ -113,6 +130,70 @@ class LLMService:
         
         return response
 
+    def generate_reply_stream(self, conversation_id: str, prompt: str, callback_fn, images=None):
+        if conversation_id not in self.history_db:
+            self.history_db[conversation_id] = []
+
+        images_present = bool(images and len(images) > 0)
+        final_prompt = prompt
+        pass_images_to_agent = None
+
+        if images_present:
+            if self.config.VISION_MODE == "proxy_vision":
+                image_description = self._describe_images(images, prompt)
+                final_prompt = f"The user uploaded image(s).\nDescription: {image_description}\n\nUser Question: {prompt}"
+            else:
+                pass_images_to_agent = images
+
+        stream_handler = SlackStreamingHandler(callback_fn)
+
+        llm = ChatOpenAI(
+            **self.llm_params, 
+            streaming=True, 
+            callbacks=[stream_handler] 
+        )
+    
+        self.memory_tool.conversation_id = conversation_id
+        active_tools = self.base_tools + self.memory_tool.get_tools()
+    
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", self.config.SYSTEM_MESSAGE),
+            MessagesPlaceholder(variable_name="history"),
+            MessagesPlaceholder(variable_name="input"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ])
+
+        agent = create_tool_calling_agent(llm, active_tools, chat_prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=active_tools, verbose=True, handle_parsing_errors=True)
+
+        history = self.history_db.get(conversation_id, [])
+    
+        if pass_images_to_agent and self.config.VISION_MODE == "main_vision":
+            content = [{"type": "text", "text": final_prompt}]
+            for img in pass_images_to_agent:
+                content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img['base64']}"}})
+            agent_input = [HumanMessage(content=content)]
+        else:
+            agent_input = [HumanMessage(content=final_prompt)]
+
+        try:
+            result = agent_executor.invoke({"input": agent_input, "history": history})
+            full_response = result.get("output", "")
+        
+            # Final cleanup and status tags
+            final_cleaned = self._strip_thinking(full_response) if not self.config.SHOW_THINKING else full_response
+            callback_fn(final_cleaned, is_final=True)
+
+            # Update History
+            self.history_db[conversation_id].append(HumanMessage(content=prompt))
+            self.history_db[conversation_id].append(AIMessage(content=final_cleaned))
+            return final_cleaned
+
+        except Exception as e:
+            print(f"Streaming Error: {e}")
+            callback_fn("I encountered an error while streaming the response.", is_final=True)
+            return "Error."
+
     def _describe_images(self, images, user_prompt):
         content = [{
             "type": "text",
@@ -132,15 +213,14 @@ class LLMService:
         return vision_response.content
 
     def _run_agent(self, conversation_id, prompt, images_present=False, raw_images=None):
-    # Selection logic
         if raw_images and self.config.VISION_MODE == "main_vision":
             llm = self.vision_llm
         else:
             llm = ChatOpenAI(**self.llm_params)
 
         # Aggressive Tool Filtering
-        memory_tool = MemoryTool(self.memory_service, conversation_id)
-        active_tools = self.base_tools + memory_tool.get_tools()
+        self.memory_tool.conversation_id = conversation_id # Update the ID for this chat
+        active_tools = self.base_tools + self.memory_tool.get_tools()
 
         if images_present:
             forbidden_tools = ["generate_comfy_image", "search_memory"]
@@ -224,7 +304,6 @@ class LLMService:
         return text.strip()
     
     def quick_query(self, prompt: str) -> str:
-        """This is the missing piece for your Decision Agent!"""
         try:
             # We use temperature 0 for strict decisions
             response = self.llm.invoke(prompt, temperature=0)

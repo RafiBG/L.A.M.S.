@@ -9,6 +9,9 @@ from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, Te
 class GroupChatHandler:
     def __init__(self, llm_service):
         self.llm_service = llm_service
+        # Streaming state tracking for UI updates
+        self.last_update_time = 0
+        self.update_interval = 1.2  # Seconds between Slack updates
 
     def handle(self, event, say, client, thread_ts):
         if event.get("bot_id") is not None:
@@ -23,6 +26,18 @@ class GroupChatHandler:
         conv_id = event.get("channel")
         #user_id = event.get("user")
         raw_text = event.get("text", "")
+
+        # Reset tool flags
+        self.llm_service.memory_tool.memory_saved = False
+        self.llm_service.memory_tool.memory_recalled = False
+        self.llm_service.memory_tool.memory_saved_failed = False
+        self.llm_service.memory_tool.memory_recalled_failed = False
+        self.llm_service.python_tool.code_executed = False
+        self.llm_service.python_tool.code_failed = False
+        self.llm_service.comfy_image_tool.is_generating = False
+        self.llm_service.comfy_image_tool.generation_failed = False
+        self.llm_service.music_generation_tool.generation_failed = False
+        self.llm_service.music_generation_tool.is_generating = False
 
         # --- DECISION LOGIC ---
         should_respond = False
@@ -49,13 +64,16 @@ class GroupChatHandler:
         print(f"Message: '{raw_text.strip()}'")
         print(f"--------------------------")
 
-        # Exit early if we aren't responding
         if not should_respond:
             return
-        # --- Proceed with Response ---
         
         # Strip bot mention from user input
         user_input = re.sub(r'<@.*?>', '', raw_text).strip()
+
+        # If text is empty and there are no files, ignore the message
+        if not user_input and not event.get("files"):
+            return
+
 
         # Initial Placeholder
         initial_msg = client.chat_postMessage(
@@ -81,53 +99,94 @@ class GroupChatHandler:
                     f"USER QUESTION: {user_input if user_input else 'Please analyze these files.'}"
                 )
 
-        # Invoke Agent (Non-Streaming)
         client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
-        # Flags
-        self.llm_service.comfy_image_tool.is_generating = False
-        self.llm_service.music_generation_tool.is_generating = False
 
-        try:
-            final_text = self.llm_service.generate_reply(conv_id, user_input, images = file_images)
-        except Exception as e:
-            print(f"Group LLM Error: {e}")
-            final_text = "I'm sorry, I hit a snag while processing that group request."
+        # --- STREAMING CALLBACK ---
+        def slack_stream_callback(content, is_final=False):
+            now = time.time()
+            if is_final or (now - self.last_update_time > self.update_interval):
+                text_to_display = content
+                attachments = []
 
-        # Handle Search Sources (Attachments)
-        attachments = []
-        provider, search_links = self.llm_service.get_latest_search_info()
+                if is_final:
+                    status_tags = []
+                    # Python Tool Status
+                    if self.llm_service.python_tool.code_executed: 
+                        status_tags.append("`[Python Executed]`")
+    
+                    if self.llm_service.python_tool.code_failed:
+                        status_tags.append("`[Python Tool Failed]` _Check connection or if service is running._")
+                    # ComfyUI Status
+                    if self.llm_service.comfy_image_tool.is_generating:
+                        status_tags.append("`[Image Generating]`")
 
-        if search_links:
-            attachments.append({
-                "color": "#36a64f",
-                "title": f"🌐 Research Sources (via {provider})",
-                "text": "\n".join([f"• {link}" for link in search_links])
-            })
+                    if self.llm_service.comfy_image_tool.generation_failed:
+                        status_tags.append("`[ComfyUI Failed]` _Check connection or if service is running._")
 
-        # Final UI Update
-        # Ensures that even if final_text is weirdly empty, the "Thinking" text is replaced
-        display_text = final_text if (final_text and final_text.strip()) else "Processed."
-        client.chat_update(
-            channel=conv_id, 
-            ts=msg_ts, 
-            text=display_text, 
-            attachments=attachments
-        )
+                    # MusicGen Status
+                    if self.llm_service.music_generation_tool.is_generating:
+                        status_tags.append("`[Music Generation]`")
 
-        # Post-Response Image Watcher
-        if self.llm_service.comfy_image_tool.is_generating:
-            threading.Thread(
-                target=self._image_watcher_thread, 
-                args=(conv_id, client, thread_ts),
-                daemon=True
-            ).start()
+                    if self.llm_service.music_generation_tool.generation_failed:
+                        status_tags.append("`[MusicGen Failed]` _Check connection or if service is running._")
+                    # Memory Status
+                    if self.llm_service.memory_tool.memory_saved: 
+                        status_tags.append("`[Memory Saved]`")
 
-        if self.llm_service.music_generation_tool.is_generating:
-            threading.Thread(
-                target=self._music_watcher_thread, 
-                args=(conv_id, client, thread_ts),
-                daemon=True
-        ).start()
+                    if self.llm_service.memory_tool.memory_saved_failed:
+                        status_tags.append("`[Memory Save Failed]` _Check connection or if service is running._")
+                    
+                    if self.llm_service.memory_tool.memory_recalled: 
+                        status_tags.append("`[Memory Recalled]`")
+
+                    if self.llm_service.memory_tool.memory_recalled_failed:
+                        status_tags.append("`[Memory Recall Failed]` _Check connection or if service is running._")
+                    
+                    if status_tags:
+                        text_to_display += "\n\n" + " ".join(status_tags)
+
+                    provider, search_links = self.llm_service.get_latest_search_info()
+                    if search_links:
+                        attachments.append({
+                            "color": "#36a64f",
+                            "title": f"🌐 Research Sources ({provider})",
+                            "text": "\n".join([f"• {link}" for link in search_links])
+                        })
+                else:
+                    text_to_display += " ▌"
+
+                try:
+                    client.chat_update(
+                        channel=conv_id,
+                        ts=msg_ts,
+                        text=text_to_display or "...",
+                        attachments=attachments
+                    )
+                    self.last_update_time = now
+                except Exception as e:
+                    print(f"Streaming Error: {e}")
+
+        # --- WORKER THREAD ---
+        def run_streaming_worker():
+            try:
+                self.llm_service.generate_reply_stream(
+                    conversation_id=conv_id,
+                    prompt=user_input,
+                    callback_fn=slack_stream_callback,
+                    images=file_images
+                )
+                
+                # Start watchers if needed
+                if self.llm_service.comfy_image_tool.is_generating:
+                    threading.Thread(target=self._image_watcher_thread, args=(conv_id, client, thread_ts), daemon=True).start()
+                if self.llm_service.music_generation_tool.is_generating:
+                    threading.Thread(target=self._music_watcher_thread, args=(conv_id, client, thread_ts), daemon=True).start()
+            
+            except Exception as e:
+                print(f"Generation Error: {e}")
+                client.chat_update(channel=conv_id, ts=msg_ts, text="I encountered an error processing this group request.")
+
+        threading.Thread(target=run_streaming_worker, daemon=True).start()
 
     def _process_files(self, files, client):
         extracted_text = []
@@ -204,32 +263,81 @@ class GroupChatHandler:
 
     
     def _image_watcher_thread(self, channel, client, thread_ts):
-        """Monitors folder for new images and uploads them as a standalone message in the group."""
         path = self.llm_service.config.COMFYUI_IMAGE_PATH
+        api_url = self.llm_service.comfy_image_tool.api_url
+        prompt_id = getattr(self.llm_service.comfy_image_tool, "latest_prompt_id", None)
         initial_files = set(os.listdir(path))
-        
-        # Poll for up to 10 minutes
-        for _ in range(200):
+        total_nodes = 11 
+
+        progress_msg = client.chat_postMessage(
+            channel = channel, thread_ts = thread_ts, text = "⏳ *ComfyUI:* Initializing..."
+        )
+        progress_ts = progress_msg["ts"]
+        # 300 = 15 minutes max (3 sec sleep * 300 loops)
+        for i in range(300): 
             time.sleep(3)
+            
+            percent_complete = 0
+
+            if prompt_id:
+                try:
+                    resp = requests.get(f"{api_url}/prompt")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        exec_info = data.get("executing", {})
+                    
+                        if exec_info.get("prompt_id") == prompt_id:
+                            current_node = str(exec_info.get("node"))
+                            
+                            try:
+                                node_idx = int(current_node)
+                                percent_complete = min(int((node_idx / total_nodes) * 100), 99)
+                            except:
+                                percent_complete = 50
+                except:
+                    pass
+
+            # Logic for progress bar
+            display_pct = percent_complete if percent_complete > 0 else min(i * 3, 95)
+            bar_length = 10
+            filled = int((display_pct / 100) * bar_length)
+            bar = "■" * filled + "□" * (bar_length - filled)
+        
+            try:
+                client.chat_update(
+                    channel = channel,
+                    ts = progress_ts,
+                    text = f"🎨 *ComfyUI Progress:* `[{bar}]` *{display_pct}%*)"
+                )
+            except Exception:
+                pass
+
+            
             current_files = set(os.listdir(path))
             new_files = current_files - initial_files
-            
             if new_files:
                 png_files = [os.path.join(path, f) for f in new_files if f.endswith('.png')]
                 if png_files:
-                    time.sleep(1) # Buffer for saving
-                    latest_image = max(png_files, key=os.path.getctime)
-                    
+                    time.sleep(1.5) # Wait for file to finish writing
+                    latest_image = max(png_files, key = os.path.getctime)
                     try:
+                        client.chat_update(
+                            channel = channel, ts = progress_ts, 
+                            text = f"🎨 *ComfyUI Progress:* `[■■■■■■■■■■]` *100%* (Done!)"
+                        )
+                        time.sleep(0.5)
+                        client.chat_delete(channel = channel, ts = progress_ts)
+                    
                         client.files_upload_v2(
-                            channel=channel,
-                            file=latest_image,
-                            thread_ts=thread_ts,
-                            title="AI Generated Image",
+                            channel = channel, thread_ts = thread_ts,
+                            file = latest_image, title = "AI Generated Image",
+                            initial_comment = "🎨 *Image ready:*"
                         )
                     except Exception as e:
-                        print(f"Group upload failed: {e}")
-                    return
+                        print(f"Upload failed: {e}")
+                    return 
+
+        client.chat_update(channel=channel, ts=progress_ts, text="❌ *ComfyUI:* Timed out.")
                 
     def _music_watcher_thread(self, channel, client, thread_ts):
         """Watches for a new .wav file and uploads it to the Slack thread."""

@@ -6,8 +6,8 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from services.llm_service import LLMService
 from handlers.group_chat import GroupChatHandler
 from handlers.private_chat import PrivateChatHandler
-from Slash_Commands.slash_clear_memory import SlashClearMemoryHandler
-from Slash_Commands.slash_help import SlashHelpHandler
+from slash_commands.slash_clear_memory import SlashClearMemoryHandler
+from slash_commands.slash_help import SlashHelpHandler
 
 class SlackBotService:
     def __init__(
@@ -34,11 +34,20 @@ class SlackBotService:
         self._register_handlers()
 
     def _register_handlers(self) -> None:
+
+        # Register slash commands
+        self.slash_clear_handler.register_commands(self.app)
+        self.slash_help_handler.register_commands(self.app)
+        
         #@self.app.event("app_mention")
         #def handle_mention(event, say, client):
             ## This only fires in channels/groups when @bot is tagged
             #thread_ts = event.get("thread_ts") or event.get("ts")
             #self.group_handler.handle(event, say, client, thread_ts)
+        @self.app.event("app_mention")
+        def handle_app_mention_events(event, say, client):
+        # This just acknowledges the event so Slack stops complaining/retrying
+            pass
 
         @self.app.event("message")
         def handle_message(event, say, client):
@@ -58,10 +67,6 @@ class SlackBotService:
                 # Group chats with response decision
                 thread_ts = event.get("thread_ts") or event.get("ts")
                 self.group_handler.handle(event, say, client, thread_ts)
-
-        # Register slash commands
-        self.slash_clear_handler.register_commands(self.app)
-        self.slash_help_handler.register_commands(self.app)
 
     def run_sync(self) -> None:
         """Starts the bot synchronously. This blocks the thread it is called in."""
