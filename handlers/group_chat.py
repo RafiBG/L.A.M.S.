@@ -134,13 +134,13 @@ class GroupChatHandler:
                         status_tags.append("`[Memory Saved]`")
 
                     if self.llm_service.memory_tool.memory_saved_failed:
-                        status_tags.append("`[Memory Save Failed]` _Check connection or if service is running._")
+                        status_tags.append("`[Memory Save Failed]` _There is no memory saved yet or embedding model name is wrong._")
                     
                     if self.llm_service.memory_tool.memory_recalled: 
                         status_tags.append("`[Memory Recalled]`")
 
                     if self.llm_service.memory_tool.memory_recalled_failed:
-                        status_tags.append("`[Memory Recall Failed]` _Check connection or if service is running._")
+                        status_tags.append("`[Memory Recall Failed]` _There is no memory saved yet or embedding model name is wrong._")
                     
                     if status_tags:
                         text_to_display += "\n\n" + " ".join(status_tags)
