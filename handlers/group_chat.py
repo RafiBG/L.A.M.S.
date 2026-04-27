@@ -13,8 +13,18 @@ class GroupChatHandler:
         self.last_update_time = 0
         self.update_interval = 1.2  # Seconds between Slack updates
 
-    def handle(self, event, say, client, thread_ts):
-        if event.get("bot_id") is not None:
+    def handle(self, event, say, client, thread_ts, req_headers=None):
+        
+        # Ignore bot messages
+        if event.get("bot_id"):
+            return
+        
+        raw_text = event.get("text", "")
+        # Check if there is no text and files to ignore ghost events
+        # This happens when AI uses tool to read websites inside them and the delay there 
+        # causes Slack to send an empty message event with just files and no text, which can trigger unwanted threads
+        if not raw_text and "files" not in event:
+            print("DEBUG: Ignored epmty ghost event with no text and no files.")
             return
         
         # Get Bot Identity
@@ -25,8 +35,6 @@ class GroupChatHandler:
 
         conv_id = event.get("channel")
         #user_id = event.get("user")
-        raw_text = event.get("text", "")
-
         # Reset tool flags
         self.llm_service.memory_tool.memory_saved = False
         self.llm_service.memory_tool.memory_recalled = False
@@ -38,6 +46,8 @@ class GroupChatHandler:
         self.llm_service.comfy_image_tool.generation_failed = False
         self.llm_service.music_generation_tool.generation_failed = False
         self.llm_service.music_generation_tool.is_generating = False
+        self.llm_service.read_url_tool.website_read_success = False
+        self.llm_service.read_url_tool.website_read_failed = False
 
         # --- DECISION LOGIC ---
         should_respond = False
@@ -59,7 +69,7 @@ class GroupChatHandler:
             reason = "[CHOICE: AI Decision]" if should_respond else "[SKIP: AI Ignored]"
 
         status = "RESPONDING" if should_respond else "IGNORING"
-        print(f"--- Decision: {status} ---")
+        print(f"\n--- Decision: {status} ---")
         print(f"Reason: {reason}")
         print(f"Message: '{raw_text.strip()}'")
         print(f"--------------------------")
@@ -141,6 +151,13 @@ class GroupChatHandler:
 
                     if self.llm_service.memory_tool.memory_recalled_failed:
                         status_tags.append("`[Memory Recall Failed]` _There is no memory saved yet or embedding model name is wrong._")
+
+                    # Website Reader Status
+                    if self.llm_service.read_url_tool.website_read_success:
+                        status_tags.append("`[Website Read]`")
+
+                    if self.llm_service.read_url_tool.website_read_failed:
+                        status_tags.append("`[Read Failed]` _Site blocked me, link was empty, or not enough info found._")
                     
                     if status_tags:
                         text_to_display += "\n\n" + " ".join(status_tags)
@@ -381,7 +398,6 @@ class GroupChatHandler:
         """Replicates the strict Decision Agent logic."""
         prompt_bot_name = f"{bot_name}, AI, Bot, Assistant"
         
-        # This matches your specific C# string interpolation logic
         decision_prompt = (
             "You are a decision agent.\n"
             "Your ONLY job is to decide if the AI should respond to the **LAST message below**.\n"
@@ -401,11 +417,10 @@ class GroupChatHandler:
         )
 
         try:
-            # Call the quick_query method in your llm_service
             response = self.llm_service.quick_query(decision_prompt).strip().lower()
             
-            # Strict cleaning to ensure we only catch "yes"
-            # Some LLMs might say "Yes." or "Decision: yes", so we check starts_with
+            # Strict cleaning to catch "yes"
+            # Some LLMs might say "Yes." or "Decision: yes"
             is_yes = response.startswith("yes") or response == "y"
             
             return is_yes

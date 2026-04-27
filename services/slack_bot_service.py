@@ -1,5 +1,6 @@
 import time
 import ssl
+import threading
 from slack_bolt import App
 from slack_sdk import WebClient
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -50,23 +51,23 @@ class SlackBotService:
             pass
 
         @self.app.event("message")
-        def handle_message(event, say, client):
-            if event.get("bot_id"): return # Ignore bots
+        def handle_message(event, say, client, body, headers):
+            # Ignore messages from bots
+            if event.get("bot_id"): return 
 
-            # STOP RETRIES: If Slack is retrying because the AI is slow, ignore the retry.
-            if event.get("headers", {}).get("x-slack-retry-num"):
-                return
-            
-            channel_type = event.get("channel_type")
-            
-            if channel_type == "im":
+            # Run the AI in the background
+            def run_workflow():
+                channel_type = event.get("channel_type")
                 # Private chats
-                self.private_handler.handle(event, say, client)
-            
-            elif channel_type in ["channel", "group"]:
-                # Group chats with response decision
-                thread_ts = event.get("thread_ts") or event.get("ts")
-                self.group_handler.handle(event, say, client, thread_ts)
+                if channel_type == "im":
+                    self.private_handler.handle(event, say, client, req_headers = headers)
+                # Group chats with response decision or mentions
+                elif channel_type in ["channel", "group"]:
+                    thread_ts = event.get("thread_ts") or event.get("ts")
+                    self.group_handler.handle(event, say, client, thread_ts)
+
+            threading.Thread(target=run_workflow, daemon=True).start()
+            return {"statusCode": 200}
 
     def run_sync(self) -> None:
         """Starts the bot synchronously. This blocks the thread it is called in."""

@@ -15,6 +15,7 @@ from tools.music_generation_tool import MusicGenerationTool
 from tools.python_executor_tool import PythonExecutorTool
 from tools.memory_tool import MemoryTool
 from tools.searxng_web_tool import SearXNGTool
+from tools.website_reader_tool import WebsiteReaderTool
 
 from services.memory_service import MemoryService
 from config import Config
@@ -58,7 +59,7 @@ class LLMService:
             "openai_api_key": config.API_KEY,
             "base_url": llm_base_url,
             "model_name": config.MODEL,
-            "temperature": 0.7
+            "temperature": 0.7,
         }
 
         self.llm = ChatOpenAI(**self.llm_params, http_client=custom_client)
@@ -79,11 +80,11 @@ class LLMService:
 
         self.memory_service = MemoryService(config)
         
-        # Store these as attributes so the flags persist!
         self.memory_tool = MemoryTool(self.memory_service, "default")
         self.python_tool = PythonExecutorTool(config)
         self.comfy_image_tool = ComfyUIImageTool(config)
         self.music_generation_tool = MusicGenerationTool(config)
+        self.read_url_tool = WebsiteReaderTool()
 
         # Base tools list static
         self.base_tools = [
@@ -93,8 +94,10 @@ class LLMService:
         self.comfy_image_tool.get_tool(),
         self.music_generation_tool.get_tool(),
         self.python_tool.get_tool(),
+        *self.read_url_tool.get_tool()
 ]
-    
+    # Generate Reply is not used anymore but keeping for reference if needed for non-streaming in the future. 
+    # The main method now is generate_reply_stream which handles both streaming and non-streaming based on the callback function provided.
     def generate_reply(self, conversation_id: str, prompt: str, images = None) -> str:
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
@@ -191,8 +194,8 @@ class LLMService:
 
         except Exception as e:
             print(f"Streaming Error: {e}")
-            callback_fn("I encountered an error while streaming the response.", is_final=True)
-            return "Error."
+            callback_fn("", is_final=True) 
+            return "[Error] Slack may send a retry while bot is thinking."
 
     def _describe_images(self, images, user_prompt):
         content = [{
@@ -305,7 +308,7 @@ class LLMService:
     
     def quick_query(self, prompt: str) -> str:
         try:
-            # We use temperature 0 for strict decisions
+            # Temperature 0 for strict decisions
             response = self.llm.invoke(prompt, temperature=0)
             return response.content if hasattr(response, 'content') else str(response)
         except Exception as e:

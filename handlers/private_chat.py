@@ -12,14 +12,24 @@ class PrivateChatHandler:
         self.last_update_time = 0
         self.update_interval = 1.2 # seconds
 
-    def handle(self, event, say, client):
+        
+    def handle(self, event, say, client, req_headers=None):
+        
+        # Ignore bot messages
         if event.get("bot_id"):
+            return
+        
+        raw_text = event.get("text", "")
+        # Check if there is no text and files to ignore ghost events
+        # This happens when AI uses tool to read websites inside them and the delay there 
+        # causes Slack to send an empty message event with just files and no text, which can trigger unwanted threads
+        if not raw_text and "files" not in event:
+            print("DEBUG: Ignored epmty ghost event with no text and no files.")
             return
 
         conv_id = event.get("channel")
         thread_ts = event.get("thread_ts") or event.get("ts")
         user_id = event.get("user")
-        raw_text = event.get("text", "")
         user_input = raw_text.strip()
 
         # Reset tool flags
@@ -33,6 +43,8 @@ class PrivateChatHandler:
         self.llm_service.comfy_image_tool.generation_failed = False
         self.llm_service.music_generation_tool.generation_failed = False
         self.llm_service.music_generation_tool.is_generating = False
+        self.llm_service.read_url_tool.website_read_success = False
+        self.llm_service.read_url_tool.website_read_failed = False
 
         # If text is still empty, check if it's in the first file's title or comment
         if not raw_text and "files" in event:
@@ -40,7 +52,7 @@ class PrivateChatHandler:
             raw_text = event["files"][0].get("initial_comment", "") or event["files"][0].get("title", "")
 
         user_input = raw_text.strip()
-
+        print(f"[PrivateChat] Input: {user_input}")
         if user_input.lower().startswith("!forget"):
             return self._handle_forget_command(conv_id, thread_ts, client)
         
@@ -120,6 +132,12 @@ class PrivateChatHandler:
 
                     if self.llm_service.memory_tool.memory_recalled_failed:
                         status_tags.append("`[Memory Recall Failed]` _There is no memory saved yet or embedding model name is wrong._")
+                    # Website Reader Status
+                    if self.llm_service.read_url_tool.website_read_success:
+                        status_tags.append("`[Website Read]`")
+
+                    if self.llm_service.read_url_tool.website_read_failed:
+                        status_tags.append("`[Read Failed]` _Site blocked me, link was empty, or not enough info found._")
                     
                     if status_tags:
                         text_to_display += "\n\n" + " ".join(status_tags)
