@@ -13,7 +13,7 @@ class PrivateChatHandler:
         self.update_interval = 1.2 # seconds
 
         
-    def handle(self, event, say, client, req_headers=None):
+    def handle(self, event, say, client):
         
         # Ignore bot messages
         if event.get("bot_id"):

@@ -121,9 +121,13 @@
                 <div class="background"></div>
             </div>
 
-            <label for="short_memory">Short Memory (Messages count)</label>
-            <small class="helper-text">Number of recent messages to keep in active context</small>
-            <input class="input-small" type="number" name="short_memory" value="{{ short_memory }}">
+            <label for="max_tokens">Memory Context Limit (Tokens)</label>
+            <small class="helper-text">
+                Maximum tokens sent to the AI.
+                <strong>CRITICAL:</strong> This value should match the Context Length (or Context Window) set in your AI backend 
+    (LM Studio, Ollama, vLLM, etc.).
+            </small>
+            <input class="input-small" type="number" name="max_tokens" value="{{ max_tokens }}">
 
             <label for="allowed_channels">Allowed Group Channels IDs</label>
             <small class="helper-text">Comma-separated list (e.g., C12345, C67890) for specific channels. To response in every channel leave it empty</small>

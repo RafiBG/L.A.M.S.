@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain.callbacks.base import BaseCallbackHandler
+from langchain_core.messages import trim_messages
 # Specific paths for version 0.3
 from langchain.agents import AgentExecutor
 from langchain.agents import create_tool_calling_agent
@@ -169,7 +170,8 @@ class LLMService:
         agent = create_tool_calling_agent(llm, active_tools, chat_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=active_tools, verbose=True, handle_parsing_errors=True)
 
-        history = self.history_db.get(conversation_id, [])
+        raw_history = self.history_db.get(conversation_id, [])
+        history = self._get_trimmed_history(raw_history, llm)
     
         if pass_images_to_agent and self.config.VISION_MODE == "main_vision":
             content = [{"type": "text", "text": final_prompt}]
@@ -264,7 +266,9 @@ class LLMService:
             max_iterations=4
         )
 
-        history = self.history_db.get(conversation_id, [])
+        raw_history = self.history_db.get(conversation_id, [])
+        history = self._get_trimmed_history(raw_history, llm)
+
 
         try:
             result = agent_executor.invoke({
@@ -282,15 +286,6 @@ class LLMService:
         # History Management
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
-
-        # Save messages
-        self.history_db[conversation_id].append(HumanMessage(content=safe_prompt))
-        self.history_db[conversation_id].append(AIMessage(content=response))
-
-        max_messages = int(self.config.SHORT_MEMORY) * 2
-
-        if len(self.history_db[conversation_id]) > max_messages:
-            self.history_db[conversation_id] = self.history_db[conversation_id][-max_messages:]
 
         return response
     
@@ -333,3 +328,19 @@ class LLMService:
 
 
         return None, []
+    
+    def _get_trimmed_history(self, history):
+    # Simple counter because local models don't support OpenAI's tiktoken counter
+        def simple_counts(messages):
+            # Fallback: roughly 1 token per 4 characters
+            total_chars = sum(len(str(m.content)) for m in messages)
+            return total_chars // 4
+
+        return trim_messages(
+            history,
+            token_counter = simple_counts,
+            max_tokens = self.config.MAX_TOKENS, 
+            strategy = "last",
+            start_on = "human",
+            include_system = True,
+    )

@@ -13,7 +13,7 @@ class GroupChatHandler:
         self.last_update_time = 0
         self.update_interval = 1.2  # Seconds between Slack updates
 
-    def handle(self, event, say, client, thread_ts, req_headers=None):
+    def handle(self, event, say, client, thread_ts):
         
         # Ignore bot messages
         if event.get("bot_id"):

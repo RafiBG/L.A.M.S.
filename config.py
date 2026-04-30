@@ -14,7 +14,7 @@ class Config:
         self.OPEN_AI_HOST = os.getenv("OPEN_AI_HOST", "")
         self.MODEL = os.getenv("MODEL", "qwen3-vl:2b-instruct-q4_K_M")
         self.SYSTEM_MESSAGE = os.getenv("SYSTEM_MESSAGE", "You are a helpful assistant.")
-        self.SHORT_MEMORY = int(os.getenv("SHORT_MEMORY", "10"))
+        self.MAX_TOKENS = int(os.getenv("MAX_TOKENS", "4096"))
         
         self.ALLOWED_GROUP_CHANNEL_IDS = self._parse_channel_ids(
             os.getenv("ALLOWED_GROUP_CHANNEL_IDS", "")

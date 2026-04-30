@@ -180,8 +180,22 @@ button:disabled {
 /* Footer note */
 .note {
     margin-top: 1.5rem;
+    margin-bottom: 0.25rem;
     font-size: 0.9rem;
     color: #6c757d;
+}
+/* Project Repository */
+.repo-url {
+    font-size: 0.85rem;
+    color: #1861ac;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.repo-url:hover {
+    text-decoration: underline;
+    color: #2485e6;
 }
 
 /* Detects if user OS is in dark mode */
