@@ -17,7 +17,6 @@ class SlackBotService:
         bot_token: str,
         app_token: str,
         allowed_channel_ids: set[str] | None,
-        max_memory: int = 10
     ) -> None:
         self.llm_service = llm_service
         self.app = App(token=bot_token)
@@ -51,7 +50,7 @@ class SlackBotService:
             pass
 
         @self.app.event("message")
-        def handle_message(event, say, client, body, headers):
+        def handle_message(event, say, client):
             # Ignore messages from bots
             if event.get("bot_id"): return 
 
@@ -60,7 +59,7 @@ class SlackBotService:
                 channel_type = event.get("channel_type")
                 # Private chats
                 if channel_type == "im":
-                    self.private_handler.handle(event, say, client, req_headers = headers)
+                    self.private_handler.handle(event, say, client)
                 # Group chats with response decision or mentions
                 elif channel_type in ["channel", "group"]:
                     thread_ts = event.get("thread_ts") or event.get("ts")
