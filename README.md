@@ -377,6 +377,8 @@ In Direct Messages (Private Chat)
 **Image Generation & Music Generation**
 <p float="left">
   <img src="https://github.com/user-attachments/assets/7be243d6-9bf1-45ad-ba78-9d776555863e" width="30%" />
+  <img alt="Slack Image Generation 2 Dark" src="https://github.com/user-attachments/assets/c39ceefe-7740-44a9-af18-4a5b4a7ee26b" width="30%" />
+
   <img src="https://github.com/user-attachments/assets/ff7280f4-9204-4798-a9c8-77b4744122bd" width="30%" />
 </p>
 
