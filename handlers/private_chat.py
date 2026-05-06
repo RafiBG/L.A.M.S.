@@ -52,7 +52,7 @@ class PrivateChatHandler:
             raw_text = event["files"][0].get("initial_comment", "") or event["files"][0].get("title", "")
 
         user_input = raw_text.strip()
-        print(f"[PrivateChat] Input: {user_input}")
+        print(f"[PrivateChat] User: {user_input}")
         if user_input.lower().startswith("!forget"):
             return self._handle_forget_command(conv_id, thread_ts, client)
         
@@ -158,7 +158,7 @@ class PrivateChatHandler:
                     client.chat_update(
                         channel=conv_id,
                         ts=msg_ts,
-                        text=text_to_display or "...",
+                        text=text_to_display or "The AI responded with empty content. Check if the AI server is running and properly connected.",
                         attachments=attachments
                     )
                     self.last_update_time = now

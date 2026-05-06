@@ -329,8 +329,7 @@ class LLMService:
 
         return None, []
     
-    def _get_trimmed_history(self, history):
-    # Simple counter because local models don't support OpenAI's tiktoken counter
+    def _get_trimmed_history(self, history, llm = None):
         def simple_counts(messages):
             # Fallback: roughly 1 token per 4 characters
             total_chars = sum(len(str(m.content)) for m in messages)
@@ -338,9 +337,9 @@ class LLMService:
 
         return trim_messages(
             history,
-            token_counter = simple_counts,
-            max_tokens = self.config.MAX_TOKENS, 
-            strategy = "last",
-            start_on = "human",
-            include_system = True,
-    )
+            token_counter=simple_counts,
+            max_tokens=self.config.MAX_TOKENS, 
+            strategy="last",
+            start_on="human",
+            include_system=True,
+        )

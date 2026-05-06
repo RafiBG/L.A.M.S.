@@ -176,7 +176,7 @@ class GroupChatHandler:
                     client.chat_update(
                         channel=conv_id,
                         ts=msg_ts,
-                        text=text_to_display or "...",
+                        text=text_to_display or "The AI responded with empty content. Check if the AI server is running and properly connected.",
                         attachments=attachments
                     )
                     self.last_update_time = now
