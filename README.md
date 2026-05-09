@@ -15,6 +15,7 @@ It integrates local LLMs via Ollama/LM Studio/Cloud, web search (Serper or SearX
 * 👁️ **Vision:** Upload images and ask the bot to describe or analyze them (requires a Vision model).
 * 🕒 **Local Time and Date** Retrieve current system time and date.
 * 🌐 **Web Search:** The bot can search the internet using either **Serper API** (Cloud) or **SearXNG** (Local/Self-hosted).
+* 🌐 **Web Reader:** Paste any URL and the bot will read and extract the full content of the page, useful for articles, documentation, and blogs. Works alongside web search for deeper lookups.
 * 🎨 **Image Generation:** The bot can generate images locally using **ComfyUI** (requires installed ComfyUI).
 * 🎵 **Music Generation:** Create original audio and music (requires separate Music Gen Python program running).
 * 🐍 **Python Execution:** Write and execute Python code snippets (requires separate Python Execution environment/program running).
