@@ -17,6 +17,8 @@ from tools.python_executor_tool import PythonExecutorTool
 from tools.memory_tool import MemoryTool
 from tools.searxng_web_tool import SearXNGTool
 from tools.website_reader_tool import WebsiteReaderTool
+from tools.company_knowledge_tool import CompanyKnowledgeTool
+from tools.slack_live_history_tool import SlackLiveHistoryTool
 
 from services.memory_service import MemoryService
 from config import Config
@@ -78,14 +80,11 @@ class LLMService:
         self.comfy_image_tool = ComfyUIImageTool(config)
         self.music_generation_tool = MusicGenerationTool(config)
         self.python_tool = PythonExecutorTool(config)
-
         self.memory_service = MemoryService(config)
-        
         self.memory_tool = MemoryTool(self.memory_service, "default")
-        self.python_tool = PythonExecutorTool(config)
-        self.comfy_image_tool = ComfyUIImageTool(config)
-        self.music_generation_tool = MusicGenerationTool(config)
         self.read_url_tool = WebsiteReaderTool()
+        self.company_knowledge_tool = CompanyKnowledgeTool(config)
+        self.slack_live_history_tool = SlackLiveHistoryTool()
 
         # Base tools list static
         self.base_tools = [
@@ -95,9 +94,10 @@ class LLMService:
         self.comfy_image_tool.get_tool(),
         self.music_generation_tool.get_tool(),
         self.python_tool.get_tool(),
-        *self.read_url_tool.get_tool()
+        *self.read_url_tool.get_tool(),
+        self.company_knowledge_tool.get_tool(),
 ]
-    # Generate Reply is not used anymore but keeping for reference if needed for non-streaming in the future. 
+    # Generate Reply is NOT used anymore but keeping for reference if needed for non-streaming in the future. 
     # The main method now is generate_reply_stream which handles both streaming and non-streaming based on the callback function provided.
     def generate_reply(self, conversation_id: str, prompt: str, images = None) -> str:
         if conversation_id not in self.history_db:
@@ -134,9 +134,23 @@ class LLMService:
         
         return response
 
-    def generate_reply_stream(self, conversation_id: str, prompt: str, callback_fn, images=None):
+    def generate_reply_stream(self, conversation_id: str, prompt: str, callback_fn, images=None, slack_history=None, dynamic_tool=None):
+        from langchain_core.messages import HumanMessage, AIMessage
+
+        # Initialize conversation key if completely missing
         if conversation_id not in self.history_db:
             self.history_db[conversation_id] = []
+            
+            # Seed local memory array with the Slack context pulled on turn 1
+            if slack_history:
+                for msg in slack_history:
+                    if msg["speaker"] == "AI":
+                        self.history_db[conversation_id].append(AIMessage(content=msg["text"]))
+                    else:
+                        # Keep track of who said what across distances
+                        formatted_content = f"[{msg['speaker']}]: {msg['text']}"
+                        self.history_db[conversation_id].append(HumanMessage(content=formatted_content))
+                #print(f"DEBUG: Successfully seeded history_db for {conversation_id} with {len(slack_history)} historical messages.")
 
         images_present = bool(images and len(images) > 0)
         final_prompt = prompt
@@ -158,7 +172,13 @@ class LLMService:
         )
     
         self.memory_tool.conversation_id = conversation_id
-        active_tools = self.base_tools + self.memory_tool.get_tools()
+        
+        # COMBINE STATIC AND DYNAMIC TOOLS
+        active_tools = list(self.base_tools) + self.memory_tool.get_tools()
+        if dynamic_tool:
+            active_tools.append(dynamic_tool)
+            #print("DEBUG: Dynamic Slack History Tool successfully appended to active run tools.")
+        
     
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", self.config.SYSTEM_MESSAGE),
@@ -170,6 +190,7 @@ class LLMService:
         agent = create_tool_calling_agent(llm, active_tools, chat_prompt)
         agent_executor = AgentExecutor(agent=agent, tools=active_tools, verbose=True, handle_parsing_errors=True)
 
+        # Retrieve memory structure directly from the database store
         raw_history = self.history_db.get(conversation_id, [])
         history = self._get_trimmed_history(raw_history, llm)
     
@@ -189,7 +210,7 @@ class LLMService:
             final_cleaned = self._strip_thinking(full_response) if not self.config.SHOW_THINKING else full_response
             callback_fn(final_cleaned, is_final=True)
 
-            # Update History
+            # Update history locally; subsequent iterations pull this directly 
             self.history_db[conversation_id].append(HumanMessage(content=prompt))
             self.history_db[conversation_id].append(AIMessage(content=final_cleaned))
             return final_cleaned

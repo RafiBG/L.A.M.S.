@@ -417,8 +417,64 @@ input:checked+.slider:before {
     font-weight: bold;
 }
 
-/* Detects if user OS is in dark mode*/
-/* Automatic Dark Mode */
+/* Drag & Drop Styles for Company Files */
+.drop-zone {
+    border: 2px dashed #bbb;
+    border-radius: 6px;
+    padding: 25px;
+    text-align: center;
+    background: #fdfdfd;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    margin-top: 5px;
+}
+
+.drop-zone.dragover {
+    background: #e6f2ff;
+    border-color: #2b5797;
+    color: #000;
+}
+
+.file-list {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    color: #333;
+    margin-top: 5px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid #e5e5e5;
+    font-size: 0.9em;
+}
+
+.file-item:last-child { 
+    border-bottom: none; 
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #cc0000;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+.delete-btn:hover {
+    color: #990000;
+}
+/* =========================================================
+     AUTOMATIC DARK MODE BASED ON USER OS PREFERENCE
+   ========================================================= */
 @media (prefers-color-scheme: dark) {
     body {
         background-image: url("images/dark-back.jpg");
@@ -455,6 +511,8 @@ input:checked+.slider:before {
         background-color: #2c2c2c;
         color: #fff;
         border: 1px solid #444;
+        /* Scroll bar color change for system_message */
+        scrollbar-color: hsl(0,0%,67%) #2c2c2c;
     }
 
     hr {
@@ -545,5 +603,38 @@ input:checked+.slider:before {
 
     .filter-switch input:not(:checked)+label {
         color: #aaa;
+    }
+
+    /* Drag & Drop Dark Mode Overrides */
+    .drop-zone {
+        border-color: #444;
+        background: rgba(255, 255, 255, 0.03);
+        color: #eee;
+    }
+
+    .drop-zone.dragover {
+        background: rgba(77, 163, 255, 0.1);
+        border-color: #4da3ff;
+        color: #fff;
+    }
+
+    .file-list {
+        background: #2c2c2c; 
+        border-color: #444;
+        color: #fff;
+        /* Scroll bar color change for company storage file memory */
+        scrollbar-color: hsl(0,0%,67%) #2c2c2c;
+    }
+
+    .file-item {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .delete-btn {
+        color: #ff4d4d;
+    }
+
+    .delete-btn:hover {
+        color: #ff1a1a;
     }
 }
