@@ -106,3 +106,47 @@ class MemoryService:
         except Exception as e:
             logger.error(f"Search failed for {conversation_id}: {e}")
             raise RuntimeError(f"Database Search Failure: {str(e)}")
+        
+    def index_company_directory(self):
+        """
+        Reads files from ./company_files, splits them into clean text pieces,
+        and indexes them into the global company vector memory space.
+        """
+        dir_path = "./company_files" 
+        global_id = "global_company_rag"
+        
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path, exist_ok=True)
+            return "Internal storage folder created. Add documents to index."
+
+        # Grab all readable files
+        files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)) and not f.startswith('.')]
+        if not files:
+            return "Indexing completed: No documents found to index in your folder."
+
+        indexed_count = 0
+        
+        # Simple processing loop to read text out of files
+        for filename in files:
+            file_path = os.path.join(dir_path, filename)
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                
+                if not content:
+                    continue
+                
+                # Split text roughly by paragraphs or lines so Chroma can search chunks effectively
+                chunks = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
+                
+                if chunks:
+                    collection = self._get_collection(global_id)
+                    metadata_list = [{"source": filename, "filename": filename} for _ in chunks]
+                    
+                    collection.add_texts(texts=chunks, metadatas=metadata_list)
+                    indexed_count += 1
+                    
+            except Exception as e:
+                logger.error(f"Failed to read file target {filename} during index phase: {e}")
+
+        return f"Successfully synchronized and indexed {indexed_count} files into global company knowledge base!"

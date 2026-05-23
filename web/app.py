@@ -1,4 +1,8 @@
-from fastapi import FastAPI, Request, Form
+import os
+import urllib.parse
+import shutil
+from services.memory_service import MemoryService
+from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +14,10 @@ env_service = EnvService()
 
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
+# Configuration for your local drag & drop directory for company files.
+UPLOAD_FOLDER = "./company_files"
+MEMORY_STORAGE_DIR = "./memory_storage"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Routes ---
 
@@ -80,6 +88,7 @@ async def config_page(request: Request):
             "searxng_host": env_data.get("SEARXNG_HOST", "http://localhost:8080"),
             "search_limit": env_data.get("SEARCH_LIMIT"),
             "searxng_engines": env_data.get("SEARXNG_ENGINES"),
+            "company_rag_k": env_data.get("COMPANY_RAG_K", "4"),
         },
     )
 
@@ -112,6 +121,7 @@ async def save_config(
     searxng_host: str = Form(...),
     search_limit: str = Form(...),
     searxng_engines: List[str] = Form([]),
+    company_rag_k: str = Form("4"),
     
     
 ):
@@ -149,3 +159,153 @@ async def save_config(
     env_service.write_selected(updates)
 
     return RedirectResponse("/config", status_code=303)
+
+# Ensure these point to your correct system folder configurations
+UPLOAD_FOLDER = "./company_files"
+MEMORY_STORAGE_DIR = "./memory_storage"
+
+@app.post("/api/upload-company-files")
+async def upload_files(files: List[UploadFile] = File(...)):
+    """
+    Handles incoming file uploads from the Drag & Drop frontend zone.
+    1. Checks if the raw files folder exists (creates it if missing).
+    2. Iterates through dropped files, scrubbing out malicious path sequences.
+    3. Streams the binary payload down to the local file system storage.
+    """
+    try:
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+        for file in files:
+            if file.filename:
+                # Basic validation to strip path traversals safely
+                safe_name = os.path.basename(file.filename)
+                target_path = os.path.join(UPLOAD_FOLDER, safe_name)
+                
+                # Stream file buffer from memory directly to your storage disk
+                with open(target_path, "wb") as buffer:
+                    content = await file.read()
+                    buffer.write(content)
+                    
+        return JSONResponse(content={"status": "success", "message": "Files saved successfully."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+@app.get("/api/list-company-files")
+def list_files():
+    """
+    Supplies data for the 'Currently Uploaded Files' dashboard UI list.
+    1. Looks at the upload folder directory.
+    2. Loops through files while filtering out hidden system metadata objects (like .DS_Store).
+    3. Sends a clean array of strings (filenames) back to the client interface.
+    """
+
+    if not os.path.exists(UPLOAD_FOLDER):
+        return JSONResponse(content=[])
+        
+    # Read files, filtering out dynamic system components (e.g. .DS_Store, .gitignore)
+    files = [
+        f for f in os.listdir(UPLOAD_FOLDER) 
+        if os.path.isfile(os.path.join(UPLOAD_FOLDER, f)) and not f.startswith('.')
+    ]
+    return JSONResponse(content=files)
+
+
+@app.delete("/api/delete-company-file/{filename}")
+def delete_file(filename: str):
+    """
+    Deletes an uploaded raw file when a user clicks the '✕' button.
+    1. Decodes web URL formatting characters (like converting %20 back to spaces).
+    2. Strips directory paths for safety.
+    3. Deletes the physical file off the system drive so it won't be picked up during the next sync.
+    """
+    # Unquote URL text string conversion if spaces are evaluated as '%20'
+    decoded_name = urllib.parse.unquote(filename)
+    safe_name = os.path.basename(decoded_name)
+    target_path = os.path.join(UPLOAD_FOLDER, safe_name)
+    
+    if os.path.exists(target_path):
+        os.remove(target_path)
+        return JSONResponse(content={"status": "success"})
+        
+    return JSONResponse(status_code=404, content={"status": "error", "message": "File context target not found."})
+
+
+@app.post("/api/reindex-company-files")
+def reindex_files(request: Request):
+    """
+    Re-chunks and embeds uploaded documents into the vector database (Chroma).
+    1. Triggers when the user hits the 'Sync & Reindex Files' dashboard button.
+    2. Dynamically finds your memory system helper inside your global application state.
+    3. Calls your text chunking processor to split text and build vector memory spaces.
+    """
+    try:
+        manager = request.app.state.bot_manager
+        
+        # Smart detection loop to find where the memory service is hiding inside BotManager
+        memory_worker = None
+        for attr in ['memory_service', 'memory', 'memory_manager', 'storage']:
+            if hasattr(manager, attr):
+                memory_worker = getattr(manager, attr)
+                break
+                
+        # If the manager doesn't have it attached, initialize a clean instance directly
+        if not memory_worker:
+            from services.memory_service import MemoryService
+            memory_worker = MemoryService(manager.config)
+            
+        status_msg = memory_worker.index_company_directory() 
+        
+        return JSONResponse(content={"status": "success", "message": status_msg})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"Sync failed: {str(e)}"})
+
+
+@app.get("/api/list-memory-folders")
+def list_memory_folders():
+    """
+    Supplies data for the 'Active Memory Storage Folders' UI list.
+    """
+    try:
+        if not os.path.exists(MEMORY_STORAGE_DIR):
+            os.makedirs(MEMORY_STORAGE_DIR, exist_ok=True)
+            
+        subdirectories = [
+            d for d in os.listdir(MEMORY_STORAGE_DIR) 
+            if os.path.isdir(os.path.join(MEMORY_STORAGE_DIR, d)) and not d.startswith('.')
+        ]
+        return JSONResponse(content={"status": "success", "folders": sorted(subdirectories)})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+
+@app.delete("/api/delete-memory-folder/{folder_name}")
+def delete_memory_folder(request: Request, folder_name: str):
+    """
+    Validates user path input parameters, strips active memory hooks,
+    and drops only the selected subdirectory completely from disk storage.
+    """
+    try:
+        # Secure the path context input parameter to stop directory traversal tricks
+        safe_folder_name = os.path.basename(folder_name)
+        target_path = os.path.join(MEMORY_STORAGE_DIR, safe_folder_name)
+        
+        if not os.path.exists(target_path) or not os.path.isdir(target_path):
+            raise HTTPException(status_code=404, detail="Target storage subdirectory not found.")
+
+        # Wipe active cache structures inside memory service if running live
+        manager = request.app.state.bot_manager
+        if hasattr(manager, 'memory_service'):
+            manager.memory_service.collections = {}
+
+        # Delete the target folder from disk
+        shutil.rmtree(target_path)
+        
+        return JSONResponse(content={
+            "status": "success", 
+            "message": f"Storage directory [{safe_folder_name}] completely erased."
+        })
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"Failed to securely erase directory: {str(e)}"})

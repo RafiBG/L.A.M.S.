@@ -11,6 +11,7 @@ class PrivateChatHandler:
         # Track streaming timing to avoid Slack rate limits
         self.last_update_time = 0
         self.update_interval = 1.2 # seconds
+        self.user_name_cache = {}
 
         
     def handle(self, event, say, client):
@@ -31,20 +32,6 @@ class PrivateChatHandler:
         thread_ts = event.get("thread_ts") or event.get("ts")
         user_id = event.get("user")
         user_input = raw_text.strip()
-
-        # Reset tool flags
-        self.llm_service.memory_tool.memory_saved = False
-        self.llm_service.memory_tool.memory_recalled = False
-        self.llm_service.memory_tool.memory_saved_failed = False
-        self.llm_service.memory_tool.memory_recalled_failed = False
-        self.llm_service.python_tool.code_executed = False
-        self.llm_service.python_tool.code_failed = False
-        self.llm_service.comfy_image_tool.is_generating = False
-        self.llm_service.comfy_image_tool.generation_failed = False
-        self.llm_service.music_generation_tool.generation_failed = False
-        self.llm_service.music_generation_tool.is_generating = False
-        self.llm_service.read_url_tool.website_read_success = False
-        self.llm_service.read_url_tool.website_read_failed = False
 
         # If text is still empty, check if it's in the first file's title or comment
         if not raw_text and "files" in event:
@@ -86,8 +73,29 @@ class PrivateChatHandler:
             else:
                 print("DEBUG: File extraction resulted in no text or there was no text to the image.")
 
+        if user_id in self.user_name_cache:
+            real_name = self.user_name_cache[user_id]
+            #print(f"DEBUG: Retrieved name from cache for user {user_id}: {real_name}")
+        else:
+            try:
+                #print(f"DEBUG: Cache miss for user {user_id}. Querying Slack API...")
+                user_info_resp = client.users_info(user=user_id)
+                if user_info_resp.get("ok"):
+                    user_profile = user_info_resp.get("user", {})
+                    real_name = user_profile.get("real_name") or user_profile.get("name") or "Unknown User"
+                    
+                    # Save to local RAM map instance
+                    self.user_name_cache[user_id] = real_name
+                else:
+                    real_name = "User"
+            except Exception as name_err:
+                print(f"Error resolving user real name: {name_err}")
+                real_name = "User"
+
+        # Prepend identity formatting to the text context payload
+        formatted_prompt = f"[User: {real_name}]: {user_input}"
+
         # Get LLM Response
-        # Update placeholder to show we are starting
         client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
 
         def slack_stream_callback(content, is_final=False):
@@ -120,6 +128,7 @@ class PrivateChatHandler:
 
                     if self.llm_service.music_generation_tool.generation_failed:
                         status_tags.append("`[MusicGen Failed]` _Check connection or if service is running._")
+
                     # Memory Status
                     if self.llm_service.memory_tool.memory_saved: 
                         status_tags.append("`[Memory Saved]`")
@@ -132,6 +141,7 @@ class PrivateChatHandler:
 
                     if self.llm_service.memory_tool.memory_recalled_failed:
                         status_tags.append("`[Memory Recall Failed]` _There is no memory saved yet or embedding model name is wrong._")
+
                     # Website Reader Status
                     if self.llm_service.read_url_tool.website_read_success:
                         status_tags.append("`[Website Read]`")
@@ -139,6 +149,13 @@ class PrivateChatHandler:
                     if self.llm_service.read_url_tool.website_read_failed:
                         status_tags.append("`[Read Failed]` _Site blocked me, link was empty, or not enough info found._")
                     
+                    # Company Knowledge Base Status
+                    if self.llm_service.company_knowledge_tool.is_company_file_read:
+                        status_tags.append("`[Company Files Searched]`")
+
+                    if self.llm_service.company_knowledge_tool.company_file_read_failed:
+                        status_tags.append("`[Company Files Failed]` _Database collection empty, sync required, or no documents matched context query._")
+
                     if status_tags:
                         text_to_display += "\n\n" + " ".join(status_tags)
 
@@ -170,7 +187,7 @@ class PrivateChatHandler:
                 # Call the new streaming method in LLMService
                 self.llm_service.generate_reply_stream(
                     conversation_id=conv_id,
-                    prompt=user_input,
+                    prompt=formatted_prompt,
                     callback_fn=slack_stream_callback,
                     images=file_images
                 )

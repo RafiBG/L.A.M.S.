@@ -1,301 +1,501 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration</title>
     <link rel="stylesheet" href="/static/config.css">
 </head>
+
 <body>
 
-<header>
-    <div class="header-inner">
-        <h1>Slack Bot Configuration</h1>
-        <div class="nav-links">
-            <a href="/" class="nav-item">Dashboard</a>
-            <a href="/config" class="nav-item active">Configuration</a>
+    <header>
+        <div class="header-inner">
+            <h1>Slack Bot Configuration</h1>
+            <div class="nav-links">
+                <a href="/" class="nav-item">Dashboard</a>
+                <a href="/config" class="nav-item active">Configuration</a>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
-<main class="container">
-    <h2>Bot Settings</h2>
-    <hr>
+    <main class="container">
+        <h2>Bot Settings</h2>
+        <hr>
 
-    <form method="post" action="/config">
+        <form method="post" action="/config">
+            <!-- Authentication & API Keys --->
+            <details class="config-section">
+                <summary class="summary-size">Authentication & API Keys</summary>
 
-        <details class="config-section">
-            <summary class="summary-size">Authentication & API Keys</summary>
-            
-            <label for="bot_token">Bot Token</label>
-            <small class="helper-text">Your Slack Bot User OAuth Token (starts with xoxb-)</small>
-            <input type="password" id="bot_token" name="bot_token" value="{{ bot_token }}">
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" onclick="toggleVisibility('bot_token')">
-                    <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">Show Bot Token</span>
-            </div>
-            
-            <label for="app_token">App Token</label>
-            <small class="helper-text">Slack App-Level Token for Socket Mode (starts with xapp-)</small>
-            <input type="password" id="app_token" name="app_token" value="{{ app_token }}">
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" onclick="toggleVisibility('app_token')">
-                    <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">Show App Token</span>
-            </div>
-
-            <label for="api_key">General API Key</label>
-            <small class="helper-text">The API key for your LLM provider (OpenAI, Anthropic, etc.)</small>
-            <input type="password" id="api_key" name="api_key" value="{{ api_key }}">
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" onclick="toggleVisibility('api_key')">
-                    <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">Show API Key</span>
-            </div>
-
-        </details>
-
-        <details class="config-section">
-            <summary class="summary-size">Model & Provider Settings</summary>
-        
-            <label for="provider">LLM Provider</label>
-            <small class="helper-text">Choose the platform hosting your AI model</small>
-            <div class="filter-switch three-way">
-                <input id="prov_ollama" type="radio" name="provider" value="ollama" {% if provider=="ollama" %}checked{% endif
-                    %}>
-                <label for="prov_ollama">Ollama</label>
-        
-                <input id="prov_lmstudio" type="radio" name="provider" value="lmstudio" {% if provider=="lmstudio" %}checked{%
-                    endif %}>
-                <label for="prov_lmstudio">LM Studio</label>
-        
-                <input id="prov_openai" type="radio" name="provider" value="openai" {% if provider=="openai" %}checked{% endif
-                    %}>
-                <label for="prov_openai">Cloud</label>
-        
-                <div class="background"></div>
-            </div>
-
-            <label for="model">Main Model Name</label>
-            <small class="helper-text">Exact model string (e.g., 'llama3.1', 'gpt-4o', or 'deepseek-v3')</small>
-            <input type="text" name="model" value="{{ model }}">
-
-            <label for="ollama_host">Ollama Host</label>
-            <small class="helper-text">Standard: http://localhost:11434/v1</small>
-            <input type="text" name="ollama_host" value="{{ ollama_host }}">
-
-            <label for="lm_studio_host">LM Studio Host</label>
-            <small class="helper-text">Standard: http://127.0.0.1:1234/v1 or http://localhost:1234/v1</small>
-            <input type="text" name="lm_studio_host" value="{{ lm_studio_host }}">
-
-            <label for="open_ai_host">Cloud Host URL</label>
-            <small class="helper-text">The API endpoint for your cloud provider</small>
-            <input type="text" name="open_ai_host" value="{{ open_ai_host }}">
-        </details>
-
-        <details class="config-section">
-            <summary class="summary-size">Behavior & Memory</summary>
-
-            <label for="system_message">System Message (Prompt)</label>
-            <small class="helper-text">The base instructions that define the bot's persona</small>
-            <textarea name="system_message" rows="6">{{ system_message }}</textarea>
-
-            <label for="show_thinking">Reasoning Process</label>
-            <small class="helper-text">For DeepSeek, Qwen and others: show 'hidden' thoughts?</small>
-            <div class="filter-switch">
-                <input id="thinking_show" type="radio" name="show_thinking" value="true" {% if show_thinking=="true" %}checked{%
-                    endif %}>
-                <label for="thinking_show">Show</label>
-            
-                <input id="thinking_hide" type="radio" name="show_thinking" value="false" {% if show_thinking=="false" %}checked{%
-                    endif %}>
-                <label for="thinking_hide">Hide</label>
-            
-                <div class="background"></div>
-            </div>
-
-            <label for="max_tokens">Memory Context Limit (Tokens)</label>
-            <small class="helper-text">
-                Maximum tokens sent to the AI.
-                <strong>CRITICAL:</strong> This value should match the Context Length (or Context Window) set in your AI backend 
-    (LM Studio, Ollama, vLLM, etc.).
-            </small>
-            <input class="input-small" type="number" name="max_tokens" value="{{ max_tokens }}">
-
-            <label for="allowed_channels">Allowed Group Channels IDs</label>
-            <small class="helper-text">Comma-separated list (e.g., C12345, C67890) for specific channels. To response in every channel leave it empty</small>
-            <input type="text" name="allowed_channels" value="{{ allowed_channels }}">
-            
-            <label for="embedding_model">Embedding Model</label>
-            <small class="helper-text">Used for RAG and local document knowledge</small>
-            <input type="text" name="embedding_model" value="{{ embedding_model }}">
-        </details>
-
-        <details class="config-section">
-            <summary class="summary-size">Web Search Settings</summary>
-    
-            <label for="search_provider">Search Engine Provider</label>
-            <small class="helper-text">Serper (Cloud) | SearXNG (Local)</small>
-            <div class="filter-switch">
-                <input id="provider_serper" type="radio" name="search_provider" value="serper" {% if search_provider=="serper"
-                    %}checked{% endif %}>
-                <label for="provider_serper">Serper</label>
-            
-                <input id="provider_searxng" type="radio" name="search_provider" value="searxng" {% if search_provider=="searxng"
-                    %}checked{% endif %}>
-                <label for="provider_searxng">SearXNG</label>
-                <div class="background"></div>
-            </div>
-            
-            <label for="search_limit">Search Results Limit</label>
-            <small class="helper-text">How many websites the AI should look at (Example: 3 for speed, 10 for deep research)</small>
-            <input class="input-small" type="number" id="search_limit" name="search_limit" value="{{ search_limit or 5 }}" min="2"
-                max="50">
-            
-            <label for="web_key">Serper API Key</label>
-            <small class="helper-text">Required only if using Serper.dev</small>
-            <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" onclick="toggleVisibility('web_key')">
-                    <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">Show Serper Key</span>
-            </div>
-
-            <label>SearXNG Host URL</label>
-            <small class="helper-text">Standard Docker address (e.g., http://localhost:8080)</small>
-            <input type="text" id="searxng_host" name="searxng_host" value="{{ searxng_host }}">
-            
-            <div class="engine-grid">
-                <label>SearXNG Search Engines</label>
-                <small class="helper-text">Select which search engines SearXNG should use for queries</small>
-                <div class="engine-toggle">
-                    <span>Google</span>
-                    <div class="checkbox-wrapper-6">
-                        <input class="tgl tgl-light" id="engine-google" type="checkbox" name="searxng_engines" value="google" {%
-                            if 'google' in searxng_engines %}checked{% endif %} />
-                        <label class="tgl-btn" for="engine-google"></label>
-                    </div>
+                <label for="bot_token">Bot Token</label>
+                <small class="helper-text">Your Slack Bot User OAuth Token (starts with xoxb-)</small>
+                <input type="password" id="bot_token" name="bot_token" value="{{ bot_token }}">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" onclick="toggleVisibility('bot_token')">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-text">Show Bot Token</span>
                 </div>
-            
-                <div class="engine-toggle">
-                    <span>Brave</span>
-                    <div class="checkbox-wrapper-6">
-                        <input class="tgl tgl-light" id="engine-brave" type="checkbox" name="searxng_engines" value="brave" {%
-                            if 'brave' in searxng_engines %}checked{% endif %} />
-                        <label class="tgl-btn" for="engine-brave"></label>
-                    </div>
+
+                <label for="app_token">App Token</label>
+                <small class="helper-text">Slack App-Level Token for Socket Mode (starts with xapp-)</small>
+                <input type="password" id="app_token" name="app_token" value="{{ app_token }}">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" onclick="toggleVisibility('app_token')">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-text">Show App Token</span>
                 </div>
-            
-                <div class="engine-toggle">
-                    <span>DuckDuckGo</span>
-                    <div class="checkbox-wrapper-6">
-                        <input class="tgl tgl-light" id="engine-ddg" type="checkbox" name="searxng_engines" value="duckduckgo" {%
-                            if 'duckduckgo' in searxng_engines %}checked{% endif %} />
-                        <label class="tgl-btn" for="engine-ddg"></label>
-                    </div>
+
+                <label for="api_key">General API Key</label>
+                <small class="helper-text">The API key for your LLM provider (OpenAI, Anthropic, etc.)</small>
+                <input type="password" id="api_key" name="api_key" value="{{ api_key }}">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" onclick="toggleVisibility('api_key')">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-text">Show API Key</span>
                 </div>
-            
-                <div class="engine-toggle">
-                    <span>Bing</span>
-                    <div class="checkbox-wrapper-6">
-                        <input class="tgl tgl-light" id="engine-bing" type="checkbox" name="searxng_engines" value="bing" {%
-                            if 'bing' in searxng_engines %}checked{% endif %} />
-                        <label class="tgl-btn" for="engine-bing"></label>
-                    </div>
-                </div>
-            
-                <div class="engine-toggle">
-                    <span>Yahoo</span>
-                    <div class="checkbox-wrapper-6">
-                        <input class="tgl tgl-light" id="engine-yahoo" type="checkbox" name="searxng_engines" value="yahoo" {%
-                            if 'yahoo' in searxng_engines %}checked{% endif %} />
-                        <label class="tgl-btn" for="engine-yahoo"></label>
-                    </div>
-                </div>
-            </div>
+
             </details>
 
-        <details class="config-section">
-            <summary class="summary-size">Vision Settings</summary>
+            <!-- Model & Provider Settings --->
+            <details class="config-section">
+                <summary class="summary-size">Model & Provider Settings</summary>
 
-            <label for="vision_mode">Vision Mode</label>
-            <small class="helper-text">Main: Built-in | Proxy: Second model for eyes</small>
-            <div class="filter-switch">
-                <input id="vis_main" type="radio" name="vision_mode" value="main_vision" {% if vision_mode=="main_vision"
-                    %}checked{% endif %}>
-                <label for="vis_main">Main Model</label>
-            
-                <input id="vis_proxy" type="radio" name="vision_mode" value="proxy_vision" {% if vision_mode=="proxy_vision"
-                    %}checked{% endif %}>
-                <label for="vis_proxy">Proxy Model</label>
-            
-                <div class="background"></div>
-            </div>
+                <label for="provider">LLM Provider</label>
+                <small class="helper-text">Choose the platform hosting your AI model</small>
+                <div class="filter-switch three-way">
+                    <input id="prov_ollama" type="radio" name="provider" value="ollama" {% if provider=="ollama"
+                        %}checked{% endif %}>
+                    <label for="prov_ollama">Ollama</label>
 
-            <label for="vision_model">Proxy Vision Model Name</label>
-            <small class="helper-text">Model used for image analysis (e.g., 'llava' or 'moondream')</small>
-            <input type="text" name="vision_model" value="{{ vision_model }}">
-        </details>
+                    <input id="prov_lmstudio" type="radio" name="provider" value="lmstudio" {% if provider=="lmstudio"
+                        %}checked{% endif %}>
+                    <label for="prov_lmstudio">LM Studio</label>
 
-        <details class="config-section">
-            <summary class="summary-size">Image & Music Generation</summary>
-            
-            <label for="comfy_api">ComfyUI API URL</label>
-            <small class="helper-text">Address where ComfyUI is running (Default: http://127.0.0.1:8188)</small>
-            <input type="text" name="comfy_api" value="{{ comfy_api }}">
+                    <input id="prov_openai" type="radio" name="provider" value="openai" {% if provider=="openai"
+                        %}checked{% endif %}>
+                    <label for="prov_openai">Cloud</label>
 
-            <label for="comfy_image_path">Image Output Folder</label>
-            <small class="helper-text">Absolute local path where images are saved</small>
-            <input type="text" name="comfy_image_path" value="{{ comfy_image_path }}">
-
-            <label>Image Dimensions & Sampling</label>
-            <small class="helper-text">
-                Recommended: 512x512 or 1024x1024 for balance of quality and performance.
-                Higher values require significantly more VRAM.
-            </small>
-            <div style="display: flex; gap: 15px;">
-                <div style="flex: 1; width:100%; padding:8px;">
-                    <label>Width</label>
-                    <input type="number" name="comfy_image_width" value="{{ comfy_image_width }}">
+                    <div class="background"></div>
                 </div>
-                <div style="flex: 1; width:100%; padding:8px;">
-                    <label>Height</label>
-                    <input type="number" name="comfy_image_height" value="{{ comfy_image_height }}">
+
+                <label for="model">Main Model Name</label>
+                <small class="helper-text">Exact model string (e.g., 'llama3.1', 'gpt-4o', or 'deepseek-v3')</small>
+                <input type="text" name="model" value="{{ model }}">
+
+                <label for="ollama_host">Ollama Host</label>
+                <small class="helper-text">Standard: http://localhost:11434/v1</small>
+                <input type="text" name="ollama_host" value="{{ ollama_host }}">
+
+                <label for="lm_studio_host">LM Studio Host</label>
+                <small class="helper-text">Standard: http://127.0.0.1:1234/v1 or http://localhost:1234/v1</small>
+                <input type="text" name="lm_studio_host" value="{{ lm_studio_host }}">
+
+                <label for="open_ai_host">Cloud Host URL</label>
+                <small class="helper-text">The API endpoint for your cloud provider</small>
+                <input type="text" name="open_ai_host" value="{{ open_ai_host }}">
+            </details>
+
+            <!-- Behavior & Memory -->
+            <details class="config-section">
+                <summary class="summary-size">Behavior & Memory</summary>
+
+                <label for="system_message">System Message (Prompt)</label>
+                <small class="helper-text">The base instructions that define the bot's persona</small>
+                <textarea name="system_message" rows="6">{{ system_message }}</textarea>
+
+                <label for="show_thinking">Reasoning Process</label>
+                <small class="helper-text">For DeepSeek, Qwen and others: show 'hidden' thoughts?</small>
+                <div class="filter-switch">
+                    <input id="thinking_show" type="radio" name="show_thinking" value="true" {% if show_thinking=="true"
+                        %}checked{% endif %}>
+                    <label for="thinking_show">Show</label>
+
+                    <input id="thinking_hide" type="radio" name="show_thinking" value="false" {% if
+                        show_thinking=="false" %}checked{% endif %}>
+                    <label for="thinking_hide">Hide</label>
+
+                    <div class="background"></div>
                 </div>
-                <div style="flex: 2; width:100%; padding:8px;">
-                    <label>Steps</label>
-                    <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
-                    <small class="helper-text">Optimal: 20-25. >30 increases load with diminishing returns.</small>
+
+                <label for="max_tokens">Memory Context Limit (Tokens)</label>
+                <small class="helper-text">
+                    Maximum tokens sent to the AI.
+                    <strong>CRITICAL:</strong> This value should match the Context Length (or Context Window) set in
+                    your AI backend (LM Studio, Ollama, vLLM, etc.).
+                </small>
+                <input class="input-small" type="number" name="max_tokens" value="{{ max_tokens }}">
+
+                <label for="allowed_channels">Allowed Group Channels IDs</label>
+                <small class="helper-text">Comma-separated list (e.g., C12345, C67890) for specific channels. To
+                    response in every channel leave it empty</small>
+                <input type="text" name="allowed_channels" value="{{ allowed_channels }}">
+
+                <label for="embedding_model">Embedding Model</label>
+                <small class="helper-text">Used for RAG and local document knowledge</small>
+                <input type="text" name="embedding_model" value="{{ embedding_model }}">
+
+                <label>Company Knowledge Base (Global RAG)</label>
+                <small class="helper-text">Drag and drop or select files directly to save them into your bot's internal
+                    document folder.</small>
+
+                <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
+                    <p>Drag & drop company files here or <strong>click to browse</strong></p>
+                    <small class="helper-text">Supports .txt, .md</small>
+                    <input type="file" id="file-input" multiple style="display: none;"
+                        onchange="handleFileSelect(this.files)">
                 </div>
-            </div>
 
-            <label for="music_generation">Music Output Folder</label>
-            <small class="helper-text">Local directory for generated audio files</small>
-            <input type="text" name="music_generation" value="{{ music_generation }}">
-        </details>
+                <label style="margin-top: 15px;">Currently Uploaded Files</label>
+                <div id="file-list-container" class="file-list">
+                    <small class="helper-text italic">Loading files...</small>
+                </div>
 
-        <hr>
-        <button type="submit" class="save-btn">Save Configuration</button>
-        <p class="red-p"><strong>Note:</strong> Restart the program after saving to apply changes.</p>
+                <label for="company_rag_k" style="margin-top: 15px;">Context Pieces Limit</label>
+                <small class="helper-text">How many matching file chunks to provide to the AI per query (Recommended: 3
+                    to 5)</small>
+                <input class="input-small" type="number" id="company_rag_k" name="company_rag_k"
+                    value="{{ company_rag_k or 4 }}" min="1" max="10">
 
-    </form>
-</main>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button type="button" class="save-btn" style="background-color: #2b5797; margin: 0;"
+                        onclick="triggerIndexing()">Sync & Reindex Files</button>
+                </div>
 
-<script>
-    function toggleVisibility(id) {
-        const input = document.getElementById(id);
-        input.type = input.type === "password" ? "text" : "password";
-    }
-</script>
+                <label style="margin-top: 25px; display: block; font-weight: 600;">Active Memory Storage Folders</label>
+                <small class="helper-text">These are the physical database directories stored inside your system. You
+                    can remove individual data folders directly.</small>
+
+                <div class="file-list-wrapper" style="margin-top: 5px;">
+                    <div name="system_message" id="folder-list-container" class="file-list">
+                        <small class="helper-text italic">Loading active storage directories...</small>
+                    </div>
+                </div>
+            </details>
+
+            <details class="config-section">
+                <summary class="summary-size">Web Search Settings</summary>
+
+                <label for="search_provider">Search Engine Provider</label>
+                <small class="helper-text">Serper (Cloud) | SearXNG (Local)</small>
+                <div class="filter-switch">
+                    <input id="provider_serper" type="radio" name="search_provider" value="serper" {% if
+                        search_provider=="serper" %}checked{% endif %}>
+                    <label for="provider_serper">Serper</label>
+
+                    <input id="provider_searxng" type="radio" name="search_provider" value="searxng" {% if
+                        search_provider=="searxng" %}checked{% endif %}>
+                    <label for="provider_searxng">SearXNG</label>
+                    <div class="background"></div>
+                </div>
+
+                <label for="search_limit">Search Results Limit</label>
+                <small class="helper-text">How many websites the AI should look at (Example: 3 for speed, 10 for deep
+                    research)</small>
+                <input class="input-small" type="number" id="search_limit" name="search_limit"
+                    value="{{ search_limit or 5 }}" min="2" max="50">
+
+                <label for="web_key">Serper API Key</label>
+                <small class="helper-text">Required only if using Serper.dev</small>
+                <input type="password" id="web_key" name="web_key" value="{{ web_key }}">
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" onclick="toggleVisibility('web_key')">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-text">Show Serper Key</span>
+                </div>
+
+                <label>SearXNG Host URL</label>
+                <small class="helper-text">Standard Docker address (e.g., http://localhost:8080)</small>
+                <input type="text" id="searxng_host" name="searxng_host" value="{{ searxng_host }}">
+
+                <div class="engine-grid">
+                    <label>SearXNG Search Engines</label>
+                    <small class="helper-text">Select which search engines SearXNG should use for queries</small>
+                    <div class="engine-toggle">
+                        <span>Google</span>
+                        <div class="checkbox-wrapper-6">
+                            <input class="tgl tgl-light" id="engine-google" type="checkbox" name="searxng_engines"
+                                value="google" {% if 'google' in searxng_engines %}checked{% endif %} />
+                            <label class="tgl-btn" for="engine-google"></label>
+                        </div>
+                    </div>
+
+                    <div class="engine-toggle">
+                        <span>Brave</span>
+                        <div class="checkbox-wrapper-6">
+                            <input class="tgl tgl-light" id="engine-brave" type="checkbox" name="searxng_engines"
+                                value="brave" {% if 'brave' in searxng_engines %}checked{% endif %} />
+                            <label class="tgl-btn" for="engine-brave"></label>
+                        </div>
+                    </div>
+
+                    <div class="engine-toggle">
+                        <span>DuckDuckGo</span>
+                        <div class="checkbox-wrapper-6">
+                            <input class="tgl tgl-light" id="engine-ddg" type="checkbox" name="searxng_engines"
+                                value="duckduckgo" {% if 'duckduckgo' in searxng_engines %}checked{% endif %} />
+                            <label class="tgl-btn" for="engine-ddg"></label>
+                        </div>
+                    </div>
+
+                    <div class="engine-toggle">
+                        <span>Bing</span>
+                        <div class="checkbox-wrapper-6">
+                            <input class="tgl tgl-light" id="engine-bing" type="checkbox" name="searxng_engines"
+                                value="bing" {% if 'bing' in searxng_engines %}checked{% endif %} />
+                            <label class="tgl-btn" for="engine-bing"></label>
+                        </div>
+                    </div>
+
+                    <div class="engine-toggle">
+                        <span>Yahoo</span>
+                        <div class="checkbox-wrapper-6">
+                            <input class="tgl tgl-light" id="engine-yahoo" type="checkbox" name="searxng_engines"
+                                value="yahoo" {% if 'yahoo' in searxng_engines %}checked{% endif %} />
+                            <label class="tgl-btn" for="engine-yahoo"></label>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="config-section">
+                <summary class="summary-size">Vision Settings</summary>
+
+                <label for="vision_mode">Vision Mode</label>
+                <small class="helper-text">Main: Built-in | Proxy: Second model for eyes</small>
+                <div class="filter-switch">
+                    <input id="vis_main" type="radio" name="vision_mode" value="main_vision" {% if
+                        vision_mode=="main_vision" %}checked{% endif %}>
+                    <label for="vis_main">Main Model</label>
+
+                    <input id="vis_proxy" type="radio" name="vision_mode" value="proxy_vision" {% if
+                        vision_mode=="proxy_vision" %}checked{% endif %}>
+                    <label for="vis_proxy">Proxy Model</label>
+
+                    <div class="background"></div>
+                </div>
+
+                <label for="vision_model">Proxy Vision Model Name</label>
+                <small class="helper-text">Model used for image analysis (e.g., 'llava' or 'moondream')</small>
+                <input type="text" name="vision_model" value="{{ vision_model }}">
+            </details>
+
+            <details class="config-section">
+                <summary class="summary-size">Image & Music Generation</summary>
+
+                <label for="comfy_api">ComfyUI API URL</label>
+                <small class="helper-text">Address where ComfyUI is running (Default: http://127.0.0.1:8188)</small>
+                <input type="text" name="comfy_api" value="{{ comfy_api }}">
+
+                <label for="comfy_image_path">Image Output Folder</label>
+                <small class="helper-text">Absolute local path where images are saved</small>
+                <input type="text" name="comfy_image_path" value="{{ comfy_image_path }}">
+
+                <label>Image Dimensions & Sampling</label>
+                <small class="helper-text">
+                    Recommended: 512x512 or 1024x1024 for balance of quality and performance.
+                    Higher values require significantly more VRAM.
+                </small>
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; width:100%; padding:8px;">
+                        <label>Width</label>
+                        <input type="number" name="comfy_image_width" value="{{ comfy_image_width }}">
+                    </div>
+                    <div style="flex: 1; width:100%; padding:8px;">
+                        <label>Height</label>
+                        <input type="number" name="comfy_image_height" value="{{ comfy_image_height }}">
+                    </div>
+                    <div style="flex: 2; width:100%; padding:8px;">
+                        <label>Steps</label>
+                        <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
+                        <small class="helper-text">Optimal: 20-25. >30 increases load with diminishing returns.</small>
+                    </div>
+                </div>
+
+                <label for="music_generation">Music Output Folder</label>
+                <small class="helper-text">Local directory for generated audio files</small>
+                <input type="text" name="music_generation" value="{{ music_generation }}">
+            </details>
+
+            <hr>
+            <button type="submit" class="save-btn">Save Configuration</button>
+            <p class="red-p"><strong>Note:</strong> Restart the program after saving to apply changes.</p>
+
+        </form>
+    </main>
+
+    <script>
+        function toggleVisibility(id) {
+            const input = document.getElementById(id);
+            input.type = input.type === "password" ? "text" : "password";
+        }
+
+        // Single DOM Content Loader lifecycle listener execution block
+        document.addEventListener("DOMContentLoaded", function () {
+            loadFileList();
+            loadMemoryStorageFolders();
+            setupDragAndDrop();
+        });
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            if (!dropZone) return;
+
+            // Prevent browser defaults for drag/drop events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+
+            // Drag visual hooks
+            dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => {
+                dropZone.classList.remove('dragover');
+                handleFileSelect(e.dataTransfer.files);
+            });
+        }
+
+        function handleFileSelect(files) {
+            if (files.length === 0) return;
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            fetch('/api/upload-company-files', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadFileList(); // Refresh UI File List
+                    } else {
+                        alert("Upload failed: " + data.message);
+                    }
+                })
+                .catch(err => alert("Upload error: " + err));
+        }
+
+        function loadFileList() {
+            const container = document.getElementById('file-list-container');
+            if (!container) return;
+
+            fetch('/api/list-company-files')
+                .then(res => res.json())
+                .then(files => {
+                    if (files.length === 0) {
+                        container.innerHTML = '<span class="helper-text italic">No files in directory. Folder is empty.</span>';
+                        return;
+                    }
+                    container.innerHTML = files.map(f => `
+                <div class="file-item" id="file-row-${btoa(f).replace(/=/g, '')}">
+                    <span>📄 ${f}</span>
+                    <button type="button" class="delete-btn" onclick="deleteFile('${f}')">✕</button>
+                </div>
+            `).join('');
+                })
+                .catch(err => {
+                    container.innerHTML = '<span class="helper-text italic" style="color:#ef4444;">Failed to load files index.</span>';
+                });
+        }
+
+        function deleteFile(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+
+            fetch(`/api/delete-company-file/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    loadFileList();
+                })
+                .catch(err => alert("Error deleting file: " + err));
+        }
+
+        function triggerIndexing() {
+            fetch('/api/reindex-company-files', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || "Vector sync complete!");
+                    loadMemoryStorageFolders(); // Refresh folders view dynamically since new indexes were built
+                })
+                .catch(err => alert("Error indexing files: " + err));
+        }
+
+        function loadMemoryStorageFolders() {
+            const container = document.getElementById("folder-list-container");
+            if (!container) return;
+
+            container.innerHTML = '<small class="helper-text italic">Scanning active storage directories...</small>';
+
+            fetch('/api/list-memory-folders')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success' && data.folders.length > 0) {
+                        container.innerHTML = ''; // Wipe out loading message
+
+                        data.folders.forEach(folderName => {
+                            const item = document.createElement("div");
+                            item.className = "file-item";
+                            item.id = `folder-row-${folderName}`;
+                            item.innerHTML = `
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            📁 <strong>${folderName}</strong>
+                        </span>
+                        <button type="button" class="delete-btn" title="Delete this folder" onclick="deleteMemoryFolder('${folderName}')">❌</button>
+                    `;
+                            container.appendChild(item);
+                        });
+                    } else {
+                        container.innerHTML = '<small class="helper-text italic" style="color: #94a3b8; padding: 5px; display:block;">No storage directories found inside memory_storage.</small>';
+                    }
+                })
+                .catch(err => {
+                    container.innerHTML = `<small class="helper-text italic" style="color: #ef4444;">Failed to sync index definitions: ${err}</small>`;
+                });
+        }
+
+        function deleteMemoryFolder(folderName) {
+            if (!confirm(`WARNING: Are you completely certain you want to wipe the folder [${folderName}] from your memory_storage? This action cannot be undone!`)) {
+                return;
+            }
+
+            fetch(`/api/delete-memory-folder/${encodeURIComponent(folderName)}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const element = document.getElementById(`folder-row-${folderName}`);
+                        if (element) {
+                            // Smooth visual exit animation transition
+                            element.style.transition = "all 0.3s ease";
+                            element.style.opacity = "0";
+                            element.style.transform = "translateX(15px)";
+                            setTimeout(() => {
+                                element.remove();
+
+                                // If no folders are left, show the empty database message
+                                const container = document.getElementById("folder-list-container");
+                                if (container && container.children.length === 0) {
+                                    container.innerHTML = '<small class="helper-text italic" style="color: #94a3b8; padding: 5px; display:block;">No storage directories found inside memory_storage.</small>';
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        alert("Folder deletion operational failure: " + data.message);
+                    }
+                })
+                .catch(err => alert("Network context execution error trying to remove directory: " + err));
+        }
+    </script>
 
 </body>
 </html>

@@ -12,6 +12,7 @@ class GroupChatHandler:
         # Streaming state tracking for UI updates
         self.last_update_time = 0
         self.update_interval = 1.2  # Seconds between Slack updates
+        self.user_name_cache = {}
 
     def handle(self, event, say, client, thread_ts):
         
@@ -30,24 +31,19 @@ class GroupChatHandler:
         # Get Bot Identity
         auth_info = client.auth_test()
         bot_user_id = auth_info["user_id"]
-        user_info = client.users_info(user=bot_user_id)
+        user_info = client.users_info(user = bot_user_id)
         bot_name = user_info["user"]["real_name"]
 
-        conv_id = event.get("channel")
-        #user_id = event.get("user")
-        # Reset tool flags
-        self.llm_service.memory_tool.memory_saved = False
-        self.llm_service.memory_tool.memory_recalled = False
-        self.llm_service.memory_tool.memory_saved_failed = False
-        self.llm_service.memory_tool.memory_recalled_failed = False
-        self.llm_service.python_tool.code_executed = False
-        self.llm_service.python_tool.code_failed = False
-        self.llm_service.comfy_image_tool.is_generating = False
-        self.llm_service.comfy_image_tool.generation_failed = False
-        self.llm_service.music_generation_tool.generation_failed = False
-        self.llm_service.music_generation_tool.is_generating = False
-        self.llm_service.read_url_tool.website_read_success = False
-        self.llm_service.read_url_tool.website_read_failed = False
+        channel_id = event.get("channel")
+        event_thread_ts = event.get("thread_ts")
+        
+        if event_thread_ts:
+            conv_id = f"{channel_id}_{event_thread_ts}"  # Separate memory vault for this specific thread
+        else:
+            conv_id = channel_id
+        
+        current_user_id = event.get("user")
+        current_user_name = self._get_user_real_name(client, current_user_id)
 
         # --- DECISION LOGIC ---
         should_respond = False
@@ -56,7 +52,7 @@ class GroupChatHandler:
         # Check for Direct Tag
         if f"<@{bot_user_id}>" in raw_text:
             should_respond = True
-            reason = "[FORCED: Tagged]"
+            reason = f"[FORCED: Tagged <@{bot_user_id}>]"
         
         # Check for Thread Reply (if the bot started/joined the thread)
         elif event.get("thread_ts") and event.get("parent_user_id") == bot_user_id:
@@ -65,14 +61,15 @@ class GroupChatHandler:
 
         # Fallback to AI Decision Agent
         if not should_respond:
-            should_respond = self._ai_wants_to_respond(raw_text, bot_name)
-            reason = "[CHOICE: AI Decision]" if should_respond else "[SKIP: AI Ignored]"
+            # Pass bot_user_id here so the agent can scan for cross-tags
+            should_respond = self._ai_wants_to_respond(raw_text, bot_name, bot_user_id)
+            reason = "[CHOICE: AI Decision]" if should_respond else "[SKIP: AI Ignored/Cross-Tagged]"
 
         status = "RESPONDING" if should_respond else "IGNORING"
-        print(f"\n--- Decision: {status} ---")
+        print(f"\n--- Decision for AI: {bot_name} ({bot_user_id}) : {status} ---")
         print(f"Reason: {reason}")
-        print(f"Message: '{raw_text.strip()}'")
-        print(f"--------------------------")
+        print(f"Message from {current_user_name}: '{raw_text.strip()}'")
+        print(f"------------------------------------------------------------------")
 
         if not should_respond:
             return
@@ -84,12 +81,13 @@ class GroupChatHandler:
         if not user_input and not event.get("files"):
             return
 
+        formatted_prompt = f"Context: You are currently messaging with user '{current_user_name}'.\nUser Message: {user_input}"
 
         # Initial Placeholder
         initial_msg = client.chat_postMessage(
-            channel=conv_id, 
-            thread_ts=thread_ts,
-            text="_Initializing group request..._"
+            channel = channel_id,
+            thread_ts = thread_ts,
+            text = "_Initializing group request..._"
         )
         msg_ts = initial_msg["ts"]
 
@@ -101,7 +99,7 @@ class GroupChatHandler:
             file_texts, file_images = self._process_files(event["files"], client)
             
             if file_texts:
-                user_input = (
+                formatted_prompt = (
                     "IMPORTANT: The user has provided the following document context.\n"
                     "--- START OF DOCUMENT ---\n"
                     f"{file_texts}\n"
@@ -109,7 +107,7 @@ class GroupChatHandler:
                     f"USER QUESTION: {user_input if user_input else 'Please analyze these files.'}"
                 )
 
-        client.chat_update(channel=conv_id, ts=msg_ts, text="_Thinking..._")
+        client.chat_update(channel=channel_id, ts=msg_ts, text="_Thinking..._")
 
         # --- STREAMING CALLBACK ---
         def slack_stream_callback(content, is_final=False):
@@ -158,6 +156,20 @@ class GroupChatHandler:
 
                     if self.llm_service.read_url_tool.website_read_failed:
                         status_tags.append("`[Read Failed]` _Site blocked me, link was empty, or not enough info found._")
+
+                    # Company Knowledge Base Status
+                    if self.llm_service.company_knowledge_tool.is_company_file_read:
+                        status_tags.append("`[Company Files Searched]`")
+
+                    if self.llm_service.company_knowledge_tool.company_file_read_failed:
+                        status_tags.append("`[Company Files Failed]` _Database collection empty, sync required, or no documents matched context query._")
+
+                    # Pull live Slack History Messages
+                    if self.llm_service.slack_live_history_tool.history_pull_success:
+                        status_tags.append("`[Live Slack History Pulled]`")
+                    
+                    if self.llm_service.slack_live_history_tool.history_pull_failed:
+                        status_tags.append("`[Live Slack History Failed]` _Check connection or if service is running._")
                     
                     if status_tags:
                         text_to_display += "\n\n" + " ".join(status_tags)
@@ -174,7 +186,7 @@ class GroupChatHandler:
 
                 try:
                     client.chat_update(
-                        channel=conv_id,
+                        channel=channel_id,
                         ts=msg_ts,
                         text=text_to_display or "The AI responded with empty content. Check if the AI server is running and properly connected.",
                         attachments=attachments
@@ -186,24 +198,80 @@ class GroupChatHandler:
         # --- WORKER THREAD ---
         def run_streaming_worker():
             try:
+                is_first_interaction = conv_id not in self.llm_service.history_db
+                slack_history = []
+
+                self.llm_service.slack_live_history_tool.history_pull_success = False
+                self.llm_service.slack_live_history_tool.history_pull_failed = False
+                
+                live_slack_tool = self.llm_service.slack_live_history_tool.get_tool(
+                    client=client, 
+                    conversation_id=conv_id
+                )
+
+                if is_first_interaction:
+                    print(f"DEBUG: First time interaction for context {conv_id}. Pulling backstory...")
+                    try:
+                        is_threaded = bool(event.get("thread_ts"))
+                        
+                        if is_threaded:
+                            history_resp = client.conversations_replies(
+                                channel=channel_id,
+                                ts=event.get("thread_ts"),
+                                limit=11
+                            )
+                        else:
+                            history_resp = client.conversations_history(
+                                channel=channel_id,
+                                limit=11
+                            )
+
+                        if history_resp.get("ok"):
+                            raw_messages = history_resp.get("messages", [])
+                            if not is_threaded:
+                                raw_messages.reverse()
+                            
+                            for msg in raw_messages:
+                                if msg.get("ts") == event.get("ts"):
+                                    continue
+                                
+                                text = msg.get("text", "").strip()
+                                if not text:
+                                    continue
+                                
+                                if msg.get("bot_id"):
+                                    if msg.get("user") == bot_user_id or msg.get("bot_id") == event.get("bot_id"):
+                                        speaker = "AI-Bot (You)"
+                                    else:
+                                        speaker = "Rival_AI"
+                                else:
+                                    raw_uid = msg.get("user")
+                                    speaker = self._get_user_real_name(client, raw_uid)
+                                
+                                slack_history.append({"speaker": speaker, "text": text})
+                    except Exception as slack_err:
+                        print(f"Error pulling Slack context for initial load: {slack_err}")
+
+                # Pass the modified formatted_prompt downstream instead of user_input
                 self.llm_service.generate_reply_stream(
-                    conversation_id=conv_id,
-                    prompt=user_input,
-                    callback_fn=slack_stream_callback,
-                    images=file_images
+                    conversation_id = conv_id,
+                    prompt = formatted_prompt,
+                    callback_fn = slack_stream_callback,
+                    images = file_images,
+                    slack_history = slack_history if is_first_interaction else None,
+                    dynamic_tool = live_slack_tool
                 )
                 
-                # Start watchers if needed
                 if self.llm_service.comfy_image_tool.is_generating:
-                    threading.Thread(target=self._image_watcher_thread, args=(conv_id, client, thread_ts), daemon=True).start()
+                    threading.Thread(target = self._image_watcher_thread, args = (channel_id, client, thread_ts), daemon=True).start()
                 if self.llm_service.music_generation_tool.is_generating:
-                    threading.Thread(target=self._music_watcher_thread, args=(conv_id, client, thread_ts), daemon=True).start()
+                    threading.Thread(target = self._music_watcher_thread, args = (channel_id, client, thread_ts), daemon=True).start()
             
             except Exception as e:
                 print(f"Generation Error: {e}")
-                client.chat_update(channel=conv_id, ts=msg_ts, text="I encountered an error processing this group request.")
+                client.chat_update(channel = channel_id, ts = msg_ts, text = "I encountered an error processing this group request.")
 
-        threading.Thread(target=run_streaming_worker, daemon=True).start()
+        threading.Thread(target = run_streaming_worker, daemon = True).start()
 
     def _process_files(self, files, client):
         extracted_text = []
@@ -394,8 +462,16 @@ class GroupChatHandler:
                     
         print(f"Music generation timed out for channel {channel}")
 
-    def _ai_wants_to_respond(self, last_message, bot_name):
+    def _ai_wants_to_respond(self, last_message, bot_name, bot_user_id):
         """Replicates the strict Decision Agent logic."""
+
+        found_tags = re.findall(r'<@(U[A-Z0-9]+)>', last_message)
+        if found_tags:
+            # If there are user tags present, but NONE of them match this instance's ID, skip out entirely.
+            if bot_user_id not in found_tags:
+                print(f"DEBUG [{bot_name}]: Suppressing evaluation because another entity was explicitly tagged.")
+                return False
+            
         prompt_bot_name = f"{bot_name}, AI, Bot, Assistant"
         
         decision_prompt = (
@@ -428,5 +504,25 @@ class GroupChatHandler:
             # If the LLM call fails, we print the error and default to False (Ignore)
             print(f"[Decision Fallback] Error: {e}")
             return False
+        
+    def _get_user_real_name(self, client, user_id):
+        """Helper to resolve raw user IDs into human-readable display names."""
+        if not user_id:
+            return "Unknown User"
+        if user_id in self.user_name_cache:
+            return self.user_name_cache[user_id]
+        
+        try:
+            response = client.users_info(user=user_id)
+            if response.get("ok"):
+                user_info = response.get("user", {})
+                profile = user_info.get("profile", {})
+                real_name = profile.get("display_name") or user_info.get("real_name") or user_info.get("name")
+                self.user_name_cache[user_id] = real_name
+                return real_name
+        except Exception as e:
+            print(f"DEBUG: Could not resolve real name for baseline user {user_id}: {e}")
+        
+        return user_id  # Fallback to ID if lookup fails
         
     
