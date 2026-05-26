@@ -36,11 +36,28 @@ class GroupChatHandler:
 
         channel_id = event.get("channel")
         event_thread_ts = event.get("thread_ts")
+
         
         if event_thread_ts:
             conv_id = f"{channel_id}_{event_thread_ts}"  # Separate memory vault for this specific thread
         else:
             conv_id = channel_id
+
+        # Reset tool flags
+        self.llm_service.memory_tool.memory_saved = False
+        self.llm_service.memory_tool.memory_recalled = False
+        self.llm_service.memory_tool.memory_saved_failed = False
+        self.llm_service.memory_tool.memory_recalled_failed = False
+        self.llm_service.python_tool.code_executed = False
+        self.llm_service.python_tool.code_failed = False
+        self.llm_service.comfy_image_tool.is_generating = False
+        self.llm_service.comfy_image_tool.generation_failed = False
+        self.llm_service.music_generation_tool.generation_failed = False
+        self.llm_service.music_generation_tool.is_generating = False
+        self.llm_service.read_url_tool.website_read_success = False
+        self.llm_service.read_url_tool.website_read_failed = False
+        self.llm_service.company_knowledge_tool.is_company_file_read = False
+        self.llm_service.company_knowledge_tool.company_file_read_failed = False
         
         current_user_id = event.get("user")
         current_user_name = self._get_user_real_name(client, current_user_id)
