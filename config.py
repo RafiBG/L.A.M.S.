@@ -36,6 +36,9 @@ class Config:
         self.SEARXNG_HOST = os.getenv("SEARXNG_HOST", "http://localhost:8080")
         self.SEARCH_LIMIT = os.getenv("SEARCH_LIMIT", "3") # Default to 3 results for web search if not set
         self.SEARXNG_ENGINES = os.getenv("SEARXNG_ENGINES", "google,brave,duckduckgo,bing") # Default engines for SearXNG if not set
+        self.COMPANY_RAG_K = (os.getenv("COMPANY_RAG_K", "4")) # Default to top 4 relevant documents for company RAG
+        self.AGENT_MAX_ITERATIONS = (os.getenv("AGENT_MAX_ITERATIONS", "4")) # Default to max 4 iterations for agents
+        self.TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
 
 
     def _get_required(self, name: str) -> str:

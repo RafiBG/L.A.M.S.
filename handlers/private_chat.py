@@ -55,7 +55,7 @@ class PrivateChatHandler:
             raw_text = event["files"][0].get("initial_comment", "") or event["files"][0].get("title", "")
 
         user_input = raw_text.strip()
-        print(f"[PrivateChat] User: {user_input}")
+
         if user_input.lower().startswith("!forget"):
             return self._handle_forget_command(conv_id, thread_ts, client)
         
@@ -108,6 +108,7 @@ class PrivateChatHandler:
                 print(f"Error resolving user real name: {name_err}")
                 real_name = "User"
 
+        print(f"[Private Chat] {real_name}: {user_input}")
         # Prepend identity formatting to the text context payload
         formatted_prompt = f"[User: {real_name}]: {user_input}"
 
