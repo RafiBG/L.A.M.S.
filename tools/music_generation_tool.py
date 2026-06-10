@@ -8,8 +8,8 @@ class MusicGenerationTool:
         self.api_url = getattr(config, "MUSIC_API_URL", "http://127.0.0.1:5001").rstrip("/")
         self.is_generating = False 
         self.generation_failed = False
-
-        print(f"DEBUG: MusicGen Tool Loaded -> API: {self.api_url}")
+        print(f"DEBUG: MusicGen Tool Loaded -> API: {config.MUSIC_API_URL}")
+        #print(f"DEBUG: MusicGen Tool Loaded -> API: {self.api_url}")
 
     def get_tool(self):
         @tool

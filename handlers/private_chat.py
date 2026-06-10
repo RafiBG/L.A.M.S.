@@ -55,7 +55,7 @@ class PrivateChatHandler:
             raw_text = event["files"][0].get("initial_comment", "") or event["files"][0].get("title", "")
 
         user_input = raw_text.strip()
-        print(f"[PrivateChat] User: {user_input}")
+
         if user_input.lower().startswith("!forget"):
             return self._handle_forget_command(conv_id, thread_ts, client)
         
@@ -108,6 +108,7 @@ class PrivateChatHandler:
                 print(f"Error resolving user real name: {name_err}")
                 real_name = "User"
 
+        print(f"[Private Chat] {real_name}: {user_input}")
         # Prepend identity formatting to the text context payload
         formatted_prompt = f"[User: {real_name}]: {user_input}"
 
@@ -262,13 +263,16 @@ class PrivateChatHandler:
             # Build the visual bar
             bar_length = 10
             filled = int((display_pct / 100) * bar_length)
-            bar = "■" * filled + "□" * (bar_length - filled)
+            bar = "▰" * filled + "▱" * (bar_length - filled)
+    
+            spinners = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+            spin = spinners[i % len(spinners)]
     
             try:
                 client.chat_update(
                     channel = channel,
                     ts = progress_ts,
-                    text=f"🎨 *ComfyUI Progress:* `[{bar}]` *{display_pct}%*)"
+                    text=f"🎨 *ComfyUI Progress:* `{spin} [{bar}]` *{display_pct}%*)"
                 )
             except Exception:
                 pass
@@ -285,7 +289,7 @@ class PrivateChatHandler:
                         # Final 100% update
                         client.chat_update(
                             channel = channel, ts = progress_ts, 
-                            text = f"🎨 *ComfyUI Progress:* `[■■■■■■■■■■]` *100%* (Done!)"
+                            text = f"🎨 *ComfyUI Progress:* `[▰▰▰▰▰▰▰▰▰▰]` *100%* (Done!)"
                         )
                         time.sleep(0.5)
                         client.chat_delete(channel = channel, ts = progress_ts)
@@ -430,40 +434,92 @@ class PrivateChatHandler:
         )
 
     def _music_watcher_thread(self, channel, client, thread_ts):
-        """Watches for a new .wav file and uploads it to the Slack thread."""
-        # Ensure your Config class has MUSIC_GENERATION_PATH (the folder where Flask saves)
+        """Watches for a new .wav file and uploads it to the Slack thread with a progress bar."""
+
         path = self.llm_service.config.MUSIC_GENERATION_PATH 
         
         if not os.path.exists(path):
             print(f"ERROR: Music path does not exist: {path}")
             return
 
+        # Post initial progress placeholder message to the thread
+        try:
+            progress_msg = client.chat_postMessage(
+                channel=channel,
+                thread_ts=thread_ts,
+                text="🎵 *Generating:* `[▱▱▱▱▱▱▱▱▱▱]` *0%*"
+            )
+            progress_ts = progress_msg["ts"]
+        except Exception as e:
+            print(f"Failed to post initial music progress message: {e}")
+            progress_ts = None
+
         initial_files = set(os.listdir(path))
+        spinners = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         
         # Search for up to 5 minutes (100 loops * 3 seconds)
-        for _ in range(100):
+        for i in range(100):
             time.sleep(3)
+            
+            # Update simulated progress tracking metrics
+            display_pct = min(i * 4, 95)  # Steadies up to 95% until the file hits the disk
+            bar_length = 10
+            filled = int((display_pct / 100) * bar_length)
+            bar = "▰" * filled + "▱" * (bar_length - filled)
+            spin = spinners[i % len(spinners)]
+
+            if progress_ts:
+                try:
+                    client.chat_update(
+                        channel=channel,
+                        ts=progress_ts,
+                        text=f"🎵 *Generating:* `{spin} [{bar}]` *{display_pct}%*"
+                    )
+                except Exception:
+                    pass
+
+            # --- FILE CHECKING ---
             current_files = set(os.listdir(path))
             new_files = current_files - initial_files
             
             if new_files:
-                # Filter for .wav files
                 wav_files = [os.path.join(path, f) for f in new_files if f.lower().endswith('.wav')]
                 if wav_files:
-                    # Small buffer to ensure the file is completely written to disk
-                    time.sleep(1) 
+                    time.sleep(1)  # Buffer to guarantee file streams have finished writing
                     latest_audio = max(wav_files, key=os.path.getctime)
                     
                     try:
+                        # Finalize progress UI status to 100%
+                        if progress_ts:
+                            client.chat_update(
+                                channel=channel,
+                                ts=progress_ts,
+                                text="🎵 *Generating:* `[▰▰▰▰▰▰▰▰▰▰]` *100%* (Done!)"
+                            )
+                            time.sleep(0.5)
+                            # Remove the temporary message bar to keep thread channels uncluttered
+                            client.chat_delete(channel=channel, ts=progress_ts)
+
+                        # Push generated binary array to Slack
                         client.files_upload_v2(
                             channel=channel,
                             thread_ts=thread_ts,
                             file=latest_audio,
                             title="AI Generated Music",
-                            initial_comment="*Your music is ready!*"
+                            initial_comment="🎵 *Your audio composition is ready!*"
                         )
                     except Exception as e:
                         print(f"Music upload failed: {e}")
-                    return # Exit thread after successful upload
-                    
+                    return 
+
+        # Handle out-of-bounds generation failure updates
+        if progress_ts:
+            try:
+                client.chat_update(
+                    channel=channel,
+                    ts=progress_ts,
+                    text="*Music:* Generation timed out. The local media server did not emit a valid compilation."
+                )
+            except Exception:
+                pass
         print(f"Music generation timed out for channel {channel}")

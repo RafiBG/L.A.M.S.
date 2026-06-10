@@ -90,6 +90,14 @@
                 <small class="helper-text">Exact model string (e.g., 'llama3.1', 'gpt-4o', or 'deepseek-v3')</small>
                 <input type="text" name="model" value="{{ model }}">
 
+                <label for="temperature">Model Temperature</label>
+                <small class="helper-text">Controls randomness: 0.0 is deterministic, 1.0 is creative (Recommended: 0.7)</small>
+                <input class="input-small" type="number" name="temperature" value="{{ temperature if temperature is defined else 0.7 }}" step="0.1" min="0.0" max="2.0">
+
+                <label for="agent_max_iterations">Agent Max Iterations</label>
+                <small class="helper-text">The maximum number of consecutive tool steps the bot can take for a single request</small>
+                <input class="input-small" type="number" name="agent_max_iterations" value="{{ agent_max_iterations }}" min="1" step="1">
+
                 <label for="ollama_host">Ollama Host</label>
                 <small class="helper-text">Standard: http://localhost:11434/v1</small>
                 <input type="text" name="ollama_host" value="{{ ollama_host }}">
@@ -131,7 +139,7 @@
                     <strong>CRITICAL:</strong> This value should match the Context Length (or Context Window) set in
                     your AI backend (LM Studio, Ollama, vLLM, etc.).
                 </small>
-                <input class="input-small" type="number" name="max_tokens" value="{{ max_tokens }}">
+                <input class="input-medium" type="number" name="max_tokens" value="{{ max_tokens }}">
 
                 <label for="allowed_channels">Allowed Group Channels IDs</label>
                 <small class="helper-text">Comma-separated list (e.g., C12345, C67890) for specific channels. To
@@ -316,7 +324,7 @@
                     </div>
                     <div style="flex: 2; width:100%; padding:8px;">
                         <label>Steps</label>
-                        <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
+                        <input class="input-small" type="number" name="comfy_steps" value="{{ comfy_steps }}">
                         <small class="helper-text">Optimal: 20-25. >30 increases load with diminishing returns.</small>
                     </div>
                 </div>
@@ -324,6 +332,20 @@
                 <label for="music_generation">Music Output Folder</label>
                 <small class="helper-text">Local directory for generated audio files</small>
                 <input type="text" name="music_generation" value="{{ music_generation }}">
+
+                <div class="config-group">
+                    <label for="music_api_url">Music API URL</label>
+                    <small class="helper-text">Address where the MusicGen audio worker server is running (Default:
+                        http://127.0.0.1:5001)</small>
+                    <input type="text" name="music_api_url" id="music_api_url" value="{{ music_api_url }}">
+                </div>
+                
+                <div class="config-group">
+                    <label for="python_exec_url">Python Execution URL</label>
+                    <small class="helper-text">Address where the isolated Python code execution sandbox is hosted (Default:
+                        http://127.0.0.1:5002)</small>
+                    <input type="text" name="python_exec_url" id="python_exec_url" value="{{ python_exec_url }}">
+                </div>
             </details>
 
             <hr>

@@ -472,6 +472,24 @@ input:checked+.slider:before {
 .delete-btn:hover {
     color: #990000;
 }
+
+.input-small {
+        width: 50px !important;
+        display: inline-block;
+        padding: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+    }
+
+    .input-medium {
+        width: 80px !important;
+        display: inline-block;
+        padding: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+    }
 /* =========================================================
      AUTOMATIC DARK MODE BASED ON USER OS PREFERENCE
    ========================================================= */
@@ -558,15 +576,6 @@ input:checked+.slider:before {
         color: #aaa;
     }
 
-    .input-small {
-        width: 80px !important;
-        display: inline-block;
-        padding: 8px;
-        margin-bottom: 1rem;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-    }
-
     .slider {
         background-color: #444;
     }
@@ -586,6 +595,12 @@ input:checked+.slider:before {
     }
 
     .input-small {
+        background-color: #2c2c2c;
+        color: #fff;
+        border: 1px solid #444;
+    }
+
+    .input-medium {
         background-color: #2c2c2c;
         color: #fff;
         border: 1px solid #444;
@@ -636,5 +651,10 @@ input:checked+.slider:before {
 
     .delete-btn:hover {
         color: #ff1a1a;
+    }
+
+    /* The arrows color in placeholders for numbers */
+    input[type="number"] {
+        color-scheme: dark;
     }
 }

@@ -62,9 +62,9 @@ class LLMService:
             "openai_api_key": config.API_KEY,
             "base_url": llm_base_url,
             "model_name": config.MODEL,
-            "temperature": 0.7,
+            "temperature": config.TEMPERATURE,
         }
-
+        print(f"DEBUG: MODEL: {config.MODEL} at {llm_base_url} with provider {config.PROVIDER} \nTEMPERATURE: {config.TEMPERATURE} Agent iterations: {config.AGENT_MAX_ITERATIONS}")
         self.llm = ChatOpenAI(**self.llm_params, http_client=custom_client)
 
         self.vision_llm = ChatOpenAI(
@@ -284,7 +284,7 @@ class LLMService:
             tools=active_tools,
             verbose=True,
             handle_parsing_errors=True,
-            max_iterations=4
+            max_iterations= self.config.AGENT_MAX_ITERATIONS,
         )
 
         raw_history = self.history_db.get(conversation_id, [])

@@ -11,8 +11,8 @@ class ComfyUIImageTool:
         self.api_url = getattr(config, "COMFYUI_API", "http://127.0.0.1:8000").rstrip("/")
         
         # Fallback logic: if config value is 0, None, or missing, default to safe values
-        self.width = int(getattr(config, "COMFYUI_IMAGE_WIDTH", 1024) or 1024)
-        self.height = int(getattr(config, "COMFYUI_IMAGE_HEIGHT", 1024) or 1024)
+        self.width = int(getattr(config, "COMFYUI_IMAGE_WIDTH", 1024) or 512)
+        self.height = int(getattr(config, "COMFYUI_IMAGE_HEIGHT", 1024) or 512)
         self.steps = int(getattr(config, "COMFYUI_STEPS", 20) or 20)
         
         self.is_generating = False

@@ -89,9 +89,12 @@ async def config_page(request: Request):
             "search_limit": env_data.get("SEARCH_LIMIT"),
             "searxng_engines": env_data.get("SEARXNG_ENGINES"),
             "company_rag_k": env_data.get("COMPANY_RAG_K", "4"),
+            "agent_max_iterations": env_data.get("AGENT_MAX_ITERATIONS", "4"),
+            "temperature": env_data.get("TEMPERATURE", "0.7"),
+            "music_api_url": env_data.get("MUSIC_API_URL", "http://127.0.0.1:5001"),
+            "python_exec_url": env_data.get("PYTHON_EXEC_URL", "http://127.0.01:5002")
         },
     )
-
 
 @app.post("/config")
 async def save_config(
@@ -122,6 +125,10 @@ async def save_config(
     search_limit: str = Form(...),
     searxng_engines: List[str] = Form([]),
     company_rag_k: str = Form("4"),
+    agent_max_iterations: str = Form(...),
+    temperature: str = Form(...),
+    music_api_url: str = Form(...),
+    python_exec_url: str = Form(...)
     
     
 ):
@@ -154,6 +161,11 @@ async def save_config(
         "SEARXNG_HOST": searxng_host,
         "SEARCH_LIMIT": search_limit,
         "SEARXNG_ENGINES": engines_str,
+        "COMPANY_RAG_K": company_rag_k,
+        "AGENT_MAX_ITERATIONS": agent_max_iterations,
+        "TEMPERATURE": temperature,
+        "MUSIC_API_URL": music_api_url,
+        "PYTHON_EXEC_URL": python_exec_url
     }
 
     env_service.write_selected(updates)
