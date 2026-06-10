@@ -90,7 +90,9 @@ async def config_page(request: Request):
             "searxng_engines": env_data.get("SEARXNG_ENGINES"),
             "company_rag_k": env_data.get("COMPANY_RAG_K", "4"),
             "agent_max_iterations": env_data.get("AGENT_MAX_ITERATIONS", "4"),
-            "temperature": env_data.get("TEMPERATURE", "0.7")
+            "temperature": env_data.get("TEMPERATURE", "0.7"),
+            "music_api_url": env_data.get("MUSIC_API_URL", "http://127.0.0.1:5001"),
+            "python_exec_url": env_data.get("PYTHON_EXEC_URL", "http://127.0.01:5002")
         },
     )
 
@@ -124,7 +126,9 @@ async def save_config(
     searxng_engines: List[str] = Form([]),
     company_rag_k: str = Form("4"),
     agent_max_iterations: str = Form(...),
-    temperature: str = Form(...)
+    temperature: str = Form(...),
+    music_api_url: str = Form(...),
+    python_exec_url: str = Form(...)
     
     
 ):
@@ -159,7 +163,9 @@ async def save_config(
         "SEARXNG_ENGINES": engines_str,
         "COMPANY_RAG_K": company_rag_k,
         "AGENT_MAX_ITERATIONS": agent_max_iterations,
-        "TEMPERATURE": temperature
+        "TEMPERATURE": temperature,
+        "MUSIC_API_URL": music_api_url,
+        "PYTHON_EXEC_URL": python_exec_url
     }
 
     env_service.write_selected(updates)

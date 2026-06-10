@@ -6,6 +6,7 @@ class PythonExecutorTool:
         self.config = config
         # Default to port 5002 to avoid conflict with MusicGen (which is on 5001)
         self.api_url = getattr(config, "PYTHON_EXEC_URL", "http://127.0.0.1:5002").rstrip("/")
+        print(f"DEBUG: Python Executor Tool Loaded -> API: {config.PYTHON_EXEC_URL}")
         self.code_executed = False  # State flag to track if code has been executed or tried
         self.code_failed = False
 

@@ -324,7 +324,7 @@
                     </div>
                     <div style="flex: 2; width:100%; padding:8px;">
                         <label>Steps</label>
-                        <input type="number" name="comfy_steps" value="{{ comfy_steps }}">
+                        <input class="input-small" type="number" name="comfy_steps" value="{{ comfy_steps }}">
                         <small class="helper-text">Optimal: 20-25. >30 increases load with diminishing returns.</small>
                     </div>
                 </div>
@@ -332,6 +332,20 @@
                 <label for="music_generation">Music Output Folder</label>
                 <small class="helper-text">Local directory for generated audio files</small>
                 <input type="text" name="music_generation" value="{{ music_generation }}">
+
+                <div class="config-group">
+                    <label for="music_api_url">Music API URL</label>
+                    <small class="helper-text">Address where the MusicGen audio worker server is running (Default:
+                        http://127.0.0.1:5001)</small>
+                    <input type="text" name="music_api_url" id="music_api_url" value="{{ music_api_url }}">
+                </div>
+                
+                <div class="config-group">
+                    <label for="python_exec_url">Python Execution URL</label>
+                    <small class="helper-text">Address where the isolated Python code execution sandbox is hosted (Default:
+                        http://127.0.0.1:5002)</small>
+                    <input type="text" name="python_exec_url" id="python_exec_url" value="{{ python_exec_url }}">
+                </div>
             </details>
 
             <hr>

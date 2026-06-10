@@ -403,13 +403,16 @@ class GroupChatHandler:
             display_pct = percent_complete if percent_complete > 0 else min(i * 3, 95)
             bar_length = 10
             filled = int((display_pct / 100) * bar_length)
-            bar = "■" * filled + "□" * (bar_length - filled)
+            bar = "▰" * filled + "▱" * (bar_length - filled)
+    
+            spinners = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+            spin = spinners[i % len(spinners)]
         
             try:
                 client.chat_update(
                     channel = channel,
                     ts = progress_ts,
-                    text = f"🎨 *ComfyUI Progress:* `[{bar}]` *{display_pct}%*)"
+                    text=f"🎨 *ComfyUI Progress:* `{spin} [{bar}]` *{display_pct}%*)"
                 )
             except Exception:
                 pass
@@ -425,7 +428,7 @@ class GroupChatHandler:
                     try:
                         client.chat_update(
                             channel = channel, ts = progress_ts, 
-                            text = f"🎨 *ComfyUI Progress:* `[■■■■■■■■■■]` *100%* (Done!)"
+                            text = f"🎨 *ComfyUI Progress:* `[▰▰▰▰▰▰▰▰▰▰]` *100%* (Done!)"
                         )
                         time.sleep(0.5)
                         client.chat_delete(channel = channel, ts = progress_ts)
@@ -439,44 +442,112 @@ class GroupChatHandler:
                         print(f"Upload failed: {e}")
                     return 
 
-        client.chat_update(channel=channel, ts=progress_ts, text="❌ *ComfyUI:* Timed out.")
+        client.chat_update(channel = channel, ts = progress_ts, text = "*ComfyUI:* Timed out.")
                 
     def _music_watcher_thread(self, channel, client, thread_ts):
-        """Watches for a new .wav file and uploads it to the Slack thread."""
+        """
+        Watches for a new .wav file and uploads it to the Slack thread.
+        Optimized for group chats to keep interactions strictly threaded.
+        """
+        import time
+        import os
+
         path = self.llm_service.config.MUSIC_GENERATION_PATH 
         
         if not os.path.exists(path):
             print(f"ERROR: Music path does not exist: {path}")
             return
 
+        # --- GROUP CHAT EMISSARY TRACKING ---
+        # If thread_ts is missing, use None to let chat_postMessage know it's a top-level message, 
+        # but capture its returned TS so the rest of the progress sequence stays inside its nested thread.
+        target_thread = thread_ts
+
+        # Post initial progress placeholder message to the group channel thread
+        try:
+            progress_msg = client.chat_postMessage(
+                channel=channel,
+                thread_ts=target_thread,
+                text="🎵 *Generating:* `[▱▱▱▱▱▱▱▱▱▱]` *0%*"
+            )
+            progress_ts = progress_msg["ts"]
+            
+            # If the tool was invoked from the main channel view, pin all subsequent updates 
+            # and the final audio file inside the message thread we just created.
+            if not target_thread:
+                target_thread = progress_ts
+                
+        except Exception as e:
+            print(f"Failed to post initial music progress message: {e}")
+            progress_ts = None
+
         initial_files = set(os.listdir(path))
+        spinners = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         
         # Search for up to 5 minutes (100 loops * 3 seconds)
-        for _ in range(100):
+        for i in range(100):
             time.sleep(3)
+            
+            # Compute professional cyberpunk progress bar
+            display_pct = min(i * 4, 95)  
+            bar_length = 10
+            filled = int((display_pct / 100) * bar_length)
+            bar = "▰" * filled + "▱" * (bar_length - filled)
+            spin = spinners[i % len(spinners)]
+
+            if progress_ts:
+                try:
+                    client.chat_update(
+                        channel=channel,
+                        ts=progress_ts,
+                        text=f"🎵 *Generating:* `{spin} [{bar}]` *{display_pct}%*"
+                    )
+                except Exception:
+                    pass
+
+            # --- MULTI-USER FILE DETECTION SYSTEM ---
             current_files = set(os.listdir(path))
             new_files = current_files - initial_files
             
             if new_files:
-                # Filter for .wav files
                 wav_files = [os.path.join(path, f) for f in new_files if f.lower().endswith('.wav')]
                 if wav_files:
-                    # Small buffer to ensure the file is completely written to disk
-                    time.sleep(1) 
+                    time.sleep(1)  # Buffer to ensure file write stream completes
                     latest_audio = max(wav_files, key=os.path.getctime)
                     
                     try:
+                        # Complete and clean up the Progress UI
+                        if progress_ts:
+                            client.chat_update(
+                                channel=channel,
+                                ts=progress_ts,
+                                text="🎵 *Generating:* `[▰▰▰▰▰▰▰▰▰▰]` *100%* (Done!)"
+                            )
+                            time.sleep(0.5)
+                            client.chat_delete(channel=channel, ts=progress_ts)
+
+                        # Upload the raw audio block cleanly to the isolated thread
                         client.files_upload_v2(
                             channel=channel,
-                            thread_ts=thread_ts,
+                            thread_ts=target_thread, # Kept strictly inside the thread
                             file=latest_audio,
                             title="AI Generated Music",
-                            initial_comment="*Your music is ready!*"
+                            initial_comment="🎵 *Your audio composition is ready!*"
                         )
                     except Exception as e:
                         print(f"Music upload failed: {e}")
-                    return # Exit thread after successful upload
-                    
+                    return 
+
+        # Handle out-of-bounds generation failures
+        if progress_ts:
+            try:
+                client.chat_update(
+                    channel=channel,
+                    ts=progress_ts,
+                    text="*Music:* Generation timed out. The local media server did not emit a valid compilation."
+                )
+            except Exception:
+                pass
         print(f"Music generation timed out for channel {channel}")
 
     def _ai_wants_to_respond(self, last_message, bot_name, bot_user_id):
