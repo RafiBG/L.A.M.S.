@@ -29,9 +29,13 @@ class SlashHelpHandler:
             "• `!help`  - Shows this menu.\n\n"
 
             "*🌐 SMART TOOLS*\n"
-            "• *Web Search:* I browse the internet (SearXNG/Serper) for real-time info.\n"
-            "• *RAG Memory:* Save specific facts to a private channel database.\n"
-            "  _Example: \"Remember that our server password is 'Admin123'\"_\n"
+            "• *Web Search:* I can browse the internet (via SearXNG/Serper) for real-time info.\n"
+            "  _Example: \"What is the current stock price of NVIDIA?\"_\n"
+            "• *Read URL:* Provide a link, and I will extract and analyze its raw web text content. *Tip:* Can be combined with Web Search to deeply analyze discovered links.\n"
+            "  _Example: \"Can you read this website and tell me what it is about: https://example.com\"_\n"
+            "• *RAG Memory:* I can save specific facts to a private database for this channel.\n"
+            "  _Example: \"Remember for long time that our server password is 'Admin123'\"_\n"
+            "  _Example: \"Do you remmeber our server password?\"_\n"
             "• *Python Runner:* I can execute Python code snippets for math solving.\n"
             "  _Example: \"12345 * 67890 = ?\"_\n\n"
             

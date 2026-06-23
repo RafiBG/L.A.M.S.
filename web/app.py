@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 import shutil
+import sys
 from services.memory_service import MemoryService
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -12,9 +13,21 @@ from typing import List
 app = FastAPI()
 env_service = EnvService()
 
-app.mount("/static", StaticFiles(directory="web/static"), name="static")
-templates = Jinja2Templates(directory="web/templates")
-# Configuration for your local drag & drop directory for company files.
+# --- Dynamic Path Resolution for PyInstaller Compatibility ---
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    # Run inside PyInstaller (.exe)
+    BASE_WEB_DIR = os.path.join(sys._MEIPASS, "web")
+else:
+    # Run dev mode
+    BASE_WEB_DIR = os.path.dirname(os.path.abspath(__file__))
+
+STATIC_PATH = os.path.join(BASE_WEB_DIR, "static")
+TEMPLATE_PATH = os.path.join(BASE_WEB_DIR, "templates")
+
+# Mount assets using the absolute resolved paths
+app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+templates = Jinja2Templates(directory=TEMPLATE_PATH)
+# Configuration for local drag & drop directory for company files.
 UPLOAD_FOLDER = "./company_files"
 MEMORY_STORAGE_DIR = "./memory_storage"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -178,12 +191,6 @@ MEMORY_STORAGE_DIR = "./memory_storage"
 
 @app.post("/api/upload-company-files")
 async def upload_files(files: List[UploadFile] = File(...)):
-    """
-    Handles incoming file uploads from the Drag & Drop frontend zone.
-    1. Checks if the raw files folder exists (creates it if missing).
-    2. Iterates through dropped files, scrubbing out malicious path sequences.
-    3. Streams the binary payload down to the local file system storage.
-    """
     try:
         if not os.path.exists(UPLOAD_FOLDER):
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -206,12 +213,6 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
 @app.get("/api/list-company-files")
 def list_files():
-    """
-    Supplies data for the 'Currently Uploaded Files' dashboard UI list.
-    1. Looks at the upload folder directory.
-    2. Loops through files while filtering out hidden system metadata objects (like .DS_Store).
-    3. Sends a clean array of strings (filenames) back to the client interface.
-    """
 
     if not os.path.exists(UPLOAD_FOLDER):
         return JSONResponse(content=[])
@@ -226,12 +227,6 @@ def list_files():
 
 @app.delete("/api/delete-company-file/{filename}")
 def delete_file(filename: str):
-    """
-    Deletes an uploaded raw file when a user clicks the '✕' button.
-    1. Decodes web URL formatting characters (like converting %20 back to spaces).
-    2. Strips directory paths for safety.
-    3. Deletes the physical file off the system drive so it won't be picked up during the next sync.
-    """
     # Unquote URL text string conversion if spaces are evaluated as '%20'
     decoded_name = urllib.parse.unquote(filename)
     safe_name = os.path.basename(decoded_name)
@@ -246,12 +241,6 @@ def delete_file(filename: str):
 
 @app.post("/api/reindex-company-files")
 def reindex_files(request: Request):
-    """
-    Re-chunks and embeds uploaded documents into the vector database (Chroma).
-    1. Triggers when the user hits the 'Sync & Reindex Files' dashboard button.
-    2. Dynamically finds your memory system helper inside your global application state.
-    3. Calls your text chunking processor to split text and build vector memory spaces.
-    """
     try:
         manager = request.app.state.bot_manager
         
