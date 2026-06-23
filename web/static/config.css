@@ -349,7 +349,7 @@ input:checked+.slider:before {
     position: relative;
     display: flex;
     align-items: center;
-    height: 50px;
+    height: 48px;
     width: 100%;
     max-width: 260px;
     /* Increased to fit text comfortably */
