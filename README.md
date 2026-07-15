@@ -15,22 +15,31 @@ It integrates local LLMs via Ollama/LM Studio/Cloud, web search (Serper or SearX
 * 👁️ **Vision:** Upload images and ask the bot to describe or analyze them (requires a Vision model).
 * 🕒 **Local Time and Date** Retrieve current system time and date.
 * 🌐 **Web Search:** The bot can search the internet using either **Serper API** (Cloud) or **SearXNG** (Local/Self-hosted).
+* 🌐 **Web Reader:** Paste any URL and the bot will read and extract the full content of the page, useful for articles, documentation, and blogs. Works alongside web search for deeper lookups.
 * 🎨 **Image Generation:** The bot can generate images locally using **ComfyUI** (requires installed ComfyUI).
 * 🎵 **Music Generation:** Create original audio and music (requires separate Music Gen Python program running).
 * 🐍 **Python Execution:** Write and execute Python code snippets (requires separate Python Execution environment/program running).
 
   
-## 🛠️ Tech Stack & Libraries
+### 🛠️ Tech Stack & Libraries
 
-* Python 3.11.9
-* Slack Bolt
-* Ollama
-* LangChain
-* FastAPI for optional services
-* ComfyUI for image generation
+* **Core Language & Environment:** Python 3.11.9, `python-dotenv`
+* **Agentic Orchestration & AI Framework:** 
+  * `langgraph`, `langgraph-prebuilt` (Multi-agent workflow loops)
+  * `langchain`, `langchain-core`, `langchain-community`
+  * `langchain-openai` (Unified connection to OpenAI-compatible APIs like Ollama, LM Studio, vLLM, or OpenAI)
+* **Web UI Dashboard & Server:** 
+  * `fastapi` (Async web framework)
+  * `uvicorn` (ASGI web server)
+* **Slack Integration:** `slack_bolt`, `slack_sdk` (Socket Mode event streaming)
+* **RAG Document Parsing & Scraping:**
+  * `pypdf`, `docx2txt` (Enterprise document ingestion)
+  * `beautifulsoup4`, `readability-lxml`, `lxml` (Clean web page parsing & structural extraction)
+* **HTTP Client Engine:** `requests`, `httpx[http2]` (Fast, multiplexed connections for ComfyUI & SearXNG API endpoints)
+* **Media & Image Processing:** `pillow` (Canvas rendering & local image validation metadata)
 
 
-## ⚙️ Installation & Setup
+## ⚙️ 1. Installation & Setup
 
 1 Create the Slack App
 
@@ -146,7 +155,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## 2. Local Model Setup - Ollama / LM Studio (The Brain)
+## 💻 2. Local Model Setup - Ollama / LM Studio (The Brain)
 Your bot can connect to:
 * Ollama
 * LM Studio
@@ -207,13 +216,13 @@ Place this endpoint and model name inside your configuration.
 
 You can choose between a Cloud-based API (Serper) or a Local, privacy-focused engine (SearXNG).
 
-Option A: Serper API (Cloud)
+### Option A: Serper API (Cloud)
 1. Get an API key from [Serper.dev](https://serper.dev).
 2. In the bot's Web Configuration:
    - Set SEARCH_PROVIDER to: serper
    - Paste your Serper API Key into the designated field.
 
-Option B: SearXNG (Local / Privacy)
+### Option B: SearXNG (Local / Privacy)
 SearXNG is a free, self-hosted metasearch engine that aggregates results from multiple sources without tracking you.
 
 1. Install Docker (If not already installed)
@@ -248,12 +257,16 @@ The command in Step B creates a folder named 'searxng' inside the directory wher
 4. Important Configuration (Enable JSON)
 For the AI to read search results, the "json" format must be enabled. 
 Inside 'settings.yml', ensure the following lines exist (add them if they are missing):
-
-use_default_settings: true<br>
-search:<br>
-  formats:<br>
-    - html<br>
-    - json<br>
+```
+use_default_settings: True
+server:
+    secret_key: "RandomTextForSecretKey"
+    bind_address: "0.0.0.0"
+search:
+    formats:
+        - html
+        - json
+```
 
 5. Bot Configuration
 In the bot's Web Configuration:
@@ -270,7 +283,7 @@ You can download and use any template inside ComfyUI, but it is strongly recomme
 Recommended Setup (Tested and Working)
 Inside the project folder:
 ```
-LocalAISlackBot/comfy resources/lumina-2-text2img-comfyui-wiki.com.json
+LocalAISlackBot/comfy_resources/lumina-2-text2img-comfyui-wiki.com.json
 ```
 You will find a .json workflow file.
 Setup Steps
@@ -377,6 +390,8 @@ In Direct Messages (Private Chat)
 **Image Generation & Music Generation**
 <p float="left">
   <img src="https://github.com/user-attachments/assets/7be243d6-9bf1-45ad-ba78-9d776555863e" width="30%" />
+  <img alt="Slack Image Generation 2 Dark" src="https://github.com/user-attachments/assets/c39ceefe-7740-44a9-af18-4a5b4a7ee26b" width="30%" />
+
   <img src="https://github.com/user-attachments/assets/ff7280f4-9204-4798-a9c8-77b4744122bd" width="30%" />
 </p>
 
